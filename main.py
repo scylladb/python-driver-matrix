@@ -6,6 +6,7 @@ import os
 
 def main():
     pythonDriverGit = os.path.join( os.getenv( 'HOME' ), 'python-driver' )
+    run.Run( pythonDriverGit, '3.5.0' )
     run.Run( pythonDriverGit, '3.6.0' )
 
 if __name__ == '__main__':
