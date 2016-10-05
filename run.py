@@ -8,7 +8,7 @@ class Run:
         os.chdir( directory )
         subprocess.check_call( 'git checkout {}'.format( tag ), shell = True )
         self._setupOutputDirectory()
-        testCommand = 'nosetests --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile( 'nosetests.log' ) )
+        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile( 'nosetests.log' ) )
         subprocess.call( testCommand.split(), env = self._environment() )
 
     def _setupOutputDirectory( self ):
