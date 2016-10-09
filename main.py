@@ -3,11 +3,13 @@ import logging
 logging.basicConfig( level = logging.INFO )
 import run
 import os
+import argparse
 
-def main():
-    pythonDriverGit = os.path.join( os.getenv( 'HOME' ), 'python-driver' )
+def main( pythonDriverGit ):
     run.Run( pythonDriverGit, '3.5.0' )
-    run.Run( pythonDriverGit, '3.6.0' )
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument( 'pythonDriverGit', help = 'folder with git repository of python-driver' )
+    arguments = parser.parse_args()
+    main( arguments.pythonDriverGit )
