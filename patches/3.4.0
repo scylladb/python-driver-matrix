@@ -1,0 +1,38 @@
+commit 8171a16a45a3aee92f6910ce4d9aa4a5142fb6ad
+Author: Yoav Kleinberger <yoav@scylladb.com>
+Date:   Sun Sep 18 14:45:29 2016 +0000
+
+    run integration tests against Scylla
+    
+    like so:
+    
+            $ nosetests -s tests/integration/standard/test_cluster.py
+
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index 64efcaa..205020f 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -32,7 +32,7 @@ from cassandra.cluster import Cluster
+ from cassandra.protocol import ConfigurationException
+ 
+ try:
+-    from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+@@ -120,13 +120,7 @@ else:
+     CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
+ 
+ CCM_KWARGS = {}
+-if CASSANDRA_DIR:
+-    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+-    CCM_KWARGS['install_dir'] = CASSANDRA_DIR
+-
+-else:
+-    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
+-    CCM_KWARGS['version'] = CASSANDRA_VERSION
++CCM_KWARGS['install_dir'] = os.path.join( os.getenv('HOME'), "scylla" )
+ 
+ if DSE_VERSION:
+     log.info('Using DSE version: %s', DSE_VERSION)

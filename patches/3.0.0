@@ -1,0 +1,33 @@
+commit 18f54a02958eb964017ac7f674038312de287da2
+Author: Yoav Kleinberger <yoav@scylladb.com>
+Date:   Sun Sep 18 14:45:29 2016 +0000
+
+    run_scylla_on_3.0.0
+
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index 34606f6..9adcdf5 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -27,7 +27,7 @@ from cassandra.cluster import Cluster
+ from cassandra.protocol import ConfigurationException
+ 
+ try:
+-    from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+ except ImportError as e:
+@@ -108,12 +108,7 @@ CASSANDRA_DIR = os.getenv('CASSANDRA_DIR', None)
+ CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
+ 
+ CCM_KWARGS = {}
+-if CASSANDRA_DIR:
+-    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+-    CCM_KWARGS['install_dir'] = CASSANDRA_DIR
+-else:
+-    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
+-    CCM_KWARGS['version'] = CASSANDRA_VERSION
++CCM_KWARGS['install_dir'] = os.path.join( os.getenv('HOME'), "scylla" )
+ 
+ if CASSANDRA_VERSION >= '2.2':
+     default_protocol_version = 4
