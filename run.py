@@ -6,9 +6,11 @@ class Run:
     def __init__( self, directory, tag ):
         self._tag = tag
         os.chdir( directory )
+        subprocess.check_call( 'git checkout .'.format( tag ), shell = True )
         subprocess.check_call( 'git checkout {}'.format( tag ), shell = True )
         self._setupOutputDirectory()
-        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile( 'nosetests.log' ) )
+        self._applyPatch()
+        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile( 'nosetests.xml' ) )
         subprocess.call( testCommand.split(), env = self._environment() )
 
     def _setupOutputDirectory( self ):
@@ -27,3 +29,9 @@ class Run:
         result.update( os.environ )
         result[ 'PROTOCOL_VERSION' ] = '3'
         return result
+
+    def _applyPatch( self ):
+        here = os.path.dirname( __file__ )
+        patchFile = os.path.join( here, 'patches', self._tag )
+        command = "patch -p1 -i {}".format( patchFile )
+        subprocess.check_call( command, shell = True )
