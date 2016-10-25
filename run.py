@@ -3,9 +3,10 @@ import shutil
 import os
 
 class Run:
-    def __init__( self, directory, tag ):
+    def __init__( self, pythonDriverDirectory, scyllaInstallDirectory, tag ):
         self._tag = tag
-        os.chdir( directory )
+        self._scyllaInstallDirectory = scyllaInstallDirectory
+        os.chdir( pythonDriverDirectory )
         subprocess.check_call( 'git checkout .'.format( tag ), shell = True )
         subprocess.check_call( 'git checkout {}'.format( tag ), shell = True )
         self._setupOutputDirectory()
@@ -28,6 +29,7 @@ class Run:
         result = {}
         result.update( os.environ )
         result[ 'PROTOCOL_VERSION' ] = '3'
+        result[ 'INSTALL_DIRECTORY' ] = self._scyllaInstallDirectory
         return result
 
     def _applyPatch( self ):

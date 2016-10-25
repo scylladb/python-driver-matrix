@@ -22,7 +22,7 @@ index 1336002..a604346 100644
 -else:
 -    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
 -    CCM_KWARGS['version'] = CASSANDRA_VERSION
-+CCM_KWARGS['install_dir'] = os.path.join( os.getenv('HOME'), "scylla" )
++CCM_KWARGS['install_dir'] = os.path.join( os.getenv('INSTALL_DIRECTORY')  )
  
  if DSE_VERSION:
      log.info('Using DSE version: %s', DSE_VERSION)

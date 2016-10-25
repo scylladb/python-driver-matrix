@@ -27,7 +27,7 @@ index 34606f6..9adcdf5 100644
 -else:
 -    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
 -    CCM_KWARGS['version'] = CASSANDRA_VERSION
-+CCM_KWARGS['install_dir'] = os.path.join( os.getenv('HOME'), "scylla" )
++CCM_KWARGS['install_dir'] = os.path.join( os.getenv('INSTALL_DIRECTORY')  )
  
  if CASSANDRA_VERSION >= '2.2':
      default_protocol_version = 4
