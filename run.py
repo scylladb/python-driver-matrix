@@ -1,4 +1,5 @@
 import subprocess
+import processjunit
 import shutil
 import os
 
@@ -11,8 +12,17 @@ class Run:
         subprocess.check_call( 'git checkout {}'.format( tag ), shell = True )
         self._setupOutputDirectory()
         self._applyPatch()
-        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile( 'nosetests.xml' ) )
+        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile() )
         subprocess.call( testCommand.split(), env = self._environment() )
+        self._junit = processjunit.ProcessJUnit( self._xunitFile() )
+
+    @property
+    def summary( self ):
+        return self._junit.summary
+
+    def __repr__( self ):
+        summary = self._junit.summary
+        return '{}: pass: {} failure: {} skipped: {}'.format( self._tag, summary[ 'testcase' ], summary[ 'failure' ], summary[ 'skipped' ] )
 
     def _setupOutputDirectory( self ):
         self._xunitDirectory = os.path.join( 'xunit', self._tag )
@@ -22,8 +32,8 @@ class Run:
             pass
         os.makedirs( self._xunitDirectory )
 
-    def _xunitFile( self, name ):
-        return os.path.join( self._xunitDirectory, name )
+    def _xunitFile( self ):
+        return os.path.join( self._xunitDirectory, 'nosetests.xml' )
 
     def _environment( self ):
         result = {}

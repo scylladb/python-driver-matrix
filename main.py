@@ -6,7 +6,22 @@ import os
 import argparse
 
 def main( pythonDriverGit, scyllaInstallDirectory ):
-    run.Run( pythonDriverGit, scyllaInstallDirectory, '3.5.0' )
+    versions = '3.0.0', '3.2.0', '3.4.0', '3.5.0'
+    results = []
+    for version in versions:
+        results.append( run.Run( pythonDriverGit, scyllaInstallDirectory, version ) )
+
+    print( '=== PYTHON DRIVER MATRIX RESULTS ===' )
+    failed = False
+    for result in results:
+        print( result )
+        if result.summary[ 'failure' ] > 0:
+            failed = True
+
+    if failed:
+        quit( 1 )
+    else:
+        quit( 0 )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
