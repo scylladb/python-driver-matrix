@@ -1,0 +1,12 @@
+# this is an example
+# put an ignore.yaml file in a version folder to use it
+#
+# tests:
+#  - tests.path.to.test_module.TestClass.test_one
+#  - tests.path.to.test_module.TestClass.test_two
+#  - etc.
+#  
+#  here's a real example for version 3.5.0
+tests:
+    - tests.integration.standard.test_cluster.ClusterTests.test_add_profile_timeout
+    - tests.integration.standard.test_cluster.ClusterTests.test_auth_provider_is_callable

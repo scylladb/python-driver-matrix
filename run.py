@@ -14,15 +14,16 @@ class Run:
         self._applyPatch()
         testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile() )
         subprocess.call( testCommand.split(), env = self._environment() )
-        self._junit = processjunit.ProcessJUnit( self._xunitFile() )
+        self._junit = processjunit.ProcessJUnit( self._xunitFile(), self._ignoreFile() )
 
     @property
     def summary( self ):
         return self._junit.summary
 
     def __repr__( self ):
-        summary = self._junit.summary
-        return '{}: pass: {} failure: {} skipped: {}'.format( self._tag, summary[ 'testcase' ], summary[ 'failure' ], summary[ 'skipped' ] )
+        details = dict( version = self._tag )
+        details.update( self._junit.summary )
+        return '{version}: pass: {testcase}, failure: {failure}, skipped: {skipped}, ignored_in_analysis: {ignored_in_analysis}'.format( ** details )
 
     def _setupOutputDirectory( self ):
         self._xunitDirectory = os.path.join( 'xunit', self._tag )
@@ -35,6 +36,11 @@ class Run:
     def _xunitFile( self ):
         return os.path.join( self._xunitDirectory, 'nosetests.xml' )
 
+    def _ignoreFile( self ):
+        here = os.path.dirname( __file__ )
+        ignoreFile = os.path.join( here, 'versions', self._tag, 'ignore.yaml' )
+        return ignoreFile
+
     def _environment( self ):
         result = {}
         result.update( os.environ )
@@ -44,6 +50,6 @@ class Run:
 
     def _applyPatch( self ):
         here = os.path.dirname( __file__ )
-        patchFile = os.path.join( here, 'patches', self._tag )
+        patchFile = os.path.join( here, 'versions', self._tag, 'patch' )
         command = "patch -p1 -i {}".format( patchFile )
         subprocess.check_call( command, shell = True )
