@@ -34,7 +34,7 @@ class Run:
         os.makedirs( self._xunitDirectory )
 
     def _xunitFile( self ):
-        return os.path.join( self._xunitDirectory, 'nosetests.xml' )
+        return os.path.join( self._xunitDirectory, 'nosetests.{}.xml'.format( self._tag ) )
 
     def _ignoreFile( self ):
         here = os.path.dirname( __file__ )
