@@ -4,7 +4,7 @@ import shutil
 import os
 
 class Run:
-    def __init__( self, pythonDriverDirectory, scyllaInstallDirectory, tag ):
+    def __init__( self, pythonDriverDirectory, scyllaInstallDirectory, tag, tests ):
         self._tag = tag
         self._scyllaInstallDirectory = scyllaInstallDirectory
         os.chdir( pythonDriverDirectory )
@@ -12,7 +12,7 @@ class Run:
         subprocess.check_call( 'git checkout {}'.format( tag ), shell = True )
         self._setupOutputDirectory()
         self._applyPatch()
-        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests.integration.standard'.format( self._xunitFile() )
+        testCommand = 'nosetests --with-xunit --xunit-file {} -s {}'.format( self._xunitFile(), tests )
         subprocess.call( testCommand.split(), env = self._environment() )
         self._junit = processjunit.ProcessJUnit( self._xunitFile(), self._ignoreFile() )
         content = open( self._xunitFile() ).read()
