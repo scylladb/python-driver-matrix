@@ -16,7 +16,7 @@ class Run:
         subprocess.call( testCommand.split(), env = self._environment() )
         self._junit = processjunit.ProcessJUnit( self._xunitFile(), self._ignoreFile() )
         content = open( self._xunitFile() ).read()
-        open( self._xunitFile(), 'w' ).write( content.replace( 'nosetests', 'version_{}'.format(tag) ) )
+        open( self._xunitFile(), 'w' ).write( content.replace( 'classname="', 'classname="version_{}_'.format(tag) ) )
 
     @property
     def summary( self ):
