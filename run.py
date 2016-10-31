@@ -12,7 +12,7 @@ class Run:
         subprocess.check_call( 'git checkout {}'.format( tag ), shell = True )
         self._setupOutputDirectory()
         self._applyPatch()
-        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile() )
+        testCommand = 'nosetests --with-xunit --xunit-file {} -s tests.integration.standard'.format( self._xunitFile() )
         subprocess.call( testCommand.split(), env = self._environment() )
         self._junit = processjunit.ProcessJUnit( self._xunitFile(), self._ignoreFile() )
         content = open( self._xunitFile() ).read()
