@@ -15,6 +15,8 @@ class Run:
         testCommand = 'nosetests --with-xunit --xunit-file {} -s tests/integration/standard/test_cluster.py'.format( self._xunitFile() )
         subprocess.call( testCommand.split(), env = self._environment() )
         self._junit = processjunit.ProcessJUnit( self._xunitFile(), self._ignoreFile() )
+        content = open( self._xunitFile() ).read()
+        open( self._xunitFile(), 'w' ).write( content.replace( 'nosetests', 'version_{}'.format(tag) ) )
 
     @property
     def summary( self ):
