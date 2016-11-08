@@ -7,4 +7,6 @@ tests:
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_case_sensitivity
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_legacy_tables
     - tests.integration.standard.test_query.LightweightTransactionTests.test_no_connection_refused_on_timeout
+    - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update
+    - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
