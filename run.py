@@ -1,6 +1,9 @@
+import logging
 import os
 import shutil
 import subprocess
+
+import yaml
 
 import processjunit
 
@@ -15,7 +18,12 @@ class Run:
         subprocess.check_call('git checkout {}'.format(tag), shell=True)
         self._setupOutputDirectory()
         self._applyPatch()
-        testCommand = 'nosetests --with-xunit --xunit-file {} -s {}'.format(self._xunitFile(), tests)
+        exclude_str = ''
+        for ignore_element in self._ignoreSet():
+            ignore_element = ignore_element.split('.')[-1]
+            exclude_str += '--exclude %s' % ignore_element
+        testCommand = 'nosetests --with-xunit --xunit-file {} -s {} {}'.format(self._xunitFile(), tests, exclude_str)
+        logging.info(testCommand)
         subprocess.call(testCommand.split(), env=self._environment())
         self._junit = processjunit.ProcessJUnit(self._xunitFile(), self._ignoreFile())
         content = open(self._xunitFile()).read()
@@ -45,6 +53,11 @@ class Run:
         here = os.path.dirname(__file__)
         ignoreFile = os.path.join(here, 'versions', self._tag, 'ignore.yaml')
         return ignoreFile
+
+    def _ignoreSet(self):
+        with open(self._ignoreFile()) as f:
+            content = yaml.load(f)
+            return set(content['tests'])
 
     def _environment(self):
         result = {}
