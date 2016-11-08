@@ -18,10 +18,10 @@ class Run:
         subprocess.check_call('git checkout {}'.format(tag), shell=True)
         self._setupOutputDirectory()
         self._applyPatch()
-        exclude_str = ''
+        exclude_str = ' '
         for ignore_element in self._ignoreSet():
             ignore_element = ignore_element.split('.')[-1]
-            exclude_str += '--exclude %s' % ignore_element
+            exclude_str += '--exclude %s ' % ignore_element
         testCommand = 'nosetests --with-xunit --xunit-file {} -s {} {}'.format(self._xunitFile(), tests, exclude_str)
         logging.info(testCommand)
         subprocess.call(testCommand.split(), env=self._environment())
