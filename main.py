@@ -1,9 +1,8 @@
-import logsubprocess
 import logging
 logging.basicConfig(level=logging.INFO)
-import run
-import os
 import argparse
+
+import run
 
 
 def main(pythonDriverGit, scyllaInstallDirectory, tests):

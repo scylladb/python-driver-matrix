@@ -1,7 +1,8 @@
-import subprocess
-import processjunit
-import shutil
 import os
+import shutil
+import subprocess
+
+import processjunit
 
 
 class Run:

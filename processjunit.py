@@ -1,7 +1,8 @@
-import xml.etree.ElementTree
 import logging
-import yaml
 import os
+import xml.etree.ElementTree
+
+import yaml
 
 
 class ProcessJUnit:
