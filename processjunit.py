@@ -1,7 +1,6 @@
 import logging
 import os
 import xml.etree.ElementTree
-
 import yaml
 
 
@@ -11,7 +10,7 @@ class ProcessJUnit:
         tree = xml.etree.ElementTree.parse(xunitFile)
         self._ignore = self._ignoreSet(ignoreFile)
         logging.info('ignoring {}'.format(self._ignore))
-        self._summary = {'testcase': 0, 'failure': 0, 'skipped': 0, 'ignored_in_analysis': 0}
+        self._summary = {'testcase': 0, 'failure': 0, 'error': 0, 'skipped': 0, 'ignored_in_analysis': 0}
         for element in tree.getiterator():
             if self._shouldIgnore(element):
                 self._summary['ignored_in_analysis'] += 1

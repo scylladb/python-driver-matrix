@@ -1,0 +1,28 @@
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index 4996af2..c448e60 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -34,7 +34,7 @@ from cassandra.protocol import ConfigurationException
+ from cassandra.policies import RoundRobinPolicy
+ 
+ try:
+-    from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+@@ -124,13 +124,7 @@ else:
+     CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
+ 
+ CCM_KWARGS = {}
+-if CASSANDRA_DIR:
+-    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+-    CCM_KWARGS['install_dir'] = CASSANDRA_DIR
+-
+-else:
+-    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
+-    CCM_KWARGS['version'] = CASSANDRA_VERSION
++CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
+ 
+ if DSE_VERSION:
+     log.info('Using DSE version: %s', DSE_VERSION)
