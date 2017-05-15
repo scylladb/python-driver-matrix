@@ -19,7 +19,7 @@ def main(python_driver_git, scylla_install_dir, tests, versions):
     quit(status)
 
 if __name__ == '__main__':
-    versions = ['3.0.0', '3.2.0', '3.4.0', '3.5.0', '3.8.0']
+    versions = ['3.0.0', '3.2.0', '3.4.0', '3.5.0', '3.8.0', '3.9.0']
     parser = argparse.ArgumentParser()
     parser.add_argument('python_driver_git', help='folder with git repository of python-driver')
     parser.add_argument('scylla_install_dir',
