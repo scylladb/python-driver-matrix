@@ -1,4 +1,7 @@
 tests:
+    - tests.integration.standard.test_authentication.AuthenticationTests.test_connect_empty_pwd
+    - tests.integration.standard.test_authentication.AuthenticationTests.test_connect_wrong_pwd
+    - tests.integration.standard.test_authentication.AuthenticationTests.test_connect_wrong_username
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_index
     - tests.integration.standard.test_metadata.IndexMapTests.test_index_follows_alter
     - tests.integration.standard.test_metadata.IndexMapTests.test_index_updates
@@ -6,7 +9,14 @@ tests:
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_indexes
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_case_sensitivity
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_legacy_tables
+    - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_function
+    - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_aggregate
+    - tests.integration.standard.test_metadata.DynamicCompositeTypeTest.test_dct_alias
+    - tests.integration.standard.test_metadata.HostMetatDataTests.test_host_release_version
+    - tests.integration.standard.test_metadata.TestCodeCoverage.test_replicas
+    - tests.integration.standard.test_policies.SpecExecTest.test_speculative_execution
     - tests.integration.standard.test_query.LightweightTransactionTests.test_no_connection_refused_on_timeout
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
+    - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
