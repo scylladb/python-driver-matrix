@@ -26,3 +26,34 @@ index 4996af2..c448e60 100644
  
  if DSE_VERSION:
      log.info('Using DSE version: %s', DSE_VERSION)
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+index ea7588a..422b749 100644
+--- a/tests/integration/standard/test_prepared_statements.py
++++ b/tests/integration/standard/test_prepared_statements.py
+@@ -123,7 +123,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_missing_primary_key(self, session):
+         statement_to_prepare = """INSERT INTO test3rf.test (v) VALUES  (?)"""
+         # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
+@@ -142,7 +142,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_missing_primary_key_dicts(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+         # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
+@@ -159,7 +159,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_too_many_bind_values(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+          # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)

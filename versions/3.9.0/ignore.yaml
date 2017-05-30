@@ -8,7 +8,6 @@ tests:
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_collection_indexes
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_indexes
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_case_sensitivity
-    - tests.integration.standard.test_metadata.TestCodeCoverage.test_legacy_tables
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_function
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_aggregate
     - tests.integration.standard.test_metadata.DynamicCompositeTypeTest.test_dct_alias
