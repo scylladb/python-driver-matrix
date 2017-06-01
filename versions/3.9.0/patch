@@ -1,19 +1,19 @@
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index 4996af2..c448e60 100644
+index d3102f6..ffb7a1a 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
-@@ -34,7 +34,7 @@ from cassandra.protocol import ConfigurationException
+@@ -35,7 +35,7 @@ from cassandra.protocol import ConfigurationException
  from cassandra.policies import RoundRobinPolicy
- 
+
  try:
 -    from ccmlib.cluster import Cluster as CCMCluster
 +    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
-@@ -124,13 +124,7 @@ else:
+@@ -126,13 +126,7 @@ else:
      CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
- 
+
  CCM_KWARGS = {}
 -if CASSANDRA_DIR:
 -    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
@@ -23,14 +23,26 @@ index 4996af2..c448e60 100644
 -    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
 -    CCM_KWARGS['version'] = CASSANDRA_VERSION
 +CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
- 
+
  if DSE_VERSION:
      log.info('Using DSE version: %s', DSE_VERSION)
+@@ -360,11 +354,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+             CCM_CLUSTER.populate(nodes, ipformat=ipformat)
+     try:
+         jvm_args = []
+-        # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
+-
+-        if 'graph' not in workloads:
+-            if PROTOCOL_VERSION >= 4:
+-                jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
+         if(len(workloads) > 0):
+             for node in CCM_CLUSTER.nodes.values():
+                 node.set_workloads(workloads)
 diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
-index ea7588a..422b749 100644
+index 50a0ed4..c50fd76 100644
 --- a/tests/integration/standard/test_prepared_statements.py
 +++ b/tests/integration/standard/test_prepared_statements.py
-@@ -123,7 +123,7 @@ class PreparedStatementTests(unittest.TestCase):
+@@ -127,7 +127,7 @@ class PreparedStatementTests(unittest.TestCase):
      def _run_missing_primary_key(self, session):
          statement_to_prepare = """INSERT INTO test3rf.test (v) VALUES  (?)"""
          # logic needed work with changes in CASSANDRA-6237
@@ -39,7 +51,7 @@ index ea7588a..422b749 100644
              self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
          else:
              prepared = session.prepare(statement_to_prepare)
-@@ -142,7 +142,7 @@ class PreparedStatementTests(unittest.TestCase):
+@@ -146,7 +146,7 @@ class PreparedStatementTests(unittest.TestCase):
      def _run_missing_primary_key_dicts(self, session):
          statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
          # logic needed work with changes in CASSANDRA-6237
@@ -48,7 +60,7 @@ index ea7588a..422b749 100644
              self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
          else:
              prepared = session.prepare(statement_to_prepare)
-@@ -159,7 +159,7 @@ class PreparedStatementTests(unittest.TestCase):
+@@ -163,7 +163,7 @@ class PreparedStatementTests(unittest.TestCase):
      def _run_too_many_bind_values(self, session):
          statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
           # logic needed work with changes in CASSANDRA-6237

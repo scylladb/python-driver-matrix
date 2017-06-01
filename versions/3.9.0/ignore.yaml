@@ -19,3 +19,5 @@ tests:
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
+v4_tests:
+
