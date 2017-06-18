@@ -13,12 +13,19 @@ tests:
     - tests.integration.standard.test_metadata.DynamicCompositeTypeTest.test_dct_alias
     - tests.integration.standard.test_metadata.HostMetatDataTests.test_host_release_version
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_replicas
+    # issue #2501 - remove the test below from ignored when fixed
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_compression_disabled
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_refresh_user_type_metadata_proto_2
     - tests.integration.standard.test_policies.SpecExecTest.test_speculative_execution
     - tests.integration.standard.test_query.LightweightTransactionTests.test_no_connection_refused_on_timeout
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
+    # issue #2504 - remove the test below from ignored when fixed
+    - tests.integration.standard.test_query.MaterializedViewQueryTest.test_mv_filtering
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
+    - tests.integration.standard.test_cluster.ClusterTests.test_refresh_schema_keyspace
+    - tests.integration.standard.test_cluster.ClusterTests.test_refresh_schema_table
 v4_tests:
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace
