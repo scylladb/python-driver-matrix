@@ -26,6 +26,15 @@ index d3102f6..ffb7a1a 100644
 
  if DSE_VERSION:
      log.info('Using DSE version: %s', DSE_VERSION)
+@@ -348,7 +342,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+                 CCM_CLUSTER = DseCluster(path, cluster_name, **CCM_KWARGS)
+             else:
+                 CCM_CLUSTER = CCMCluster(path, cluster_name, **CCM_KWARGS)
+-            CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
++            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental': True})
+             if CASSANDRA_VERSION >= '2.2':
+                 CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
+                 if CASSANDRA_VERSION >= '3.0':
 @@ -360,11 +354,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
              CCM_CLUSTER.populate(nodes, ipformat=ipformat)
      try:
