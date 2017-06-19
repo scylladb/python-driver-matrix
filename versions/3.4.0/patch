@@ -1,19 +1,19 @@
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index 4996af2..c448e60 100644
+index 64efcaa..ca53dcd 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
-@@ -34,7 +34,7 @@ from cassandra.protocol import ConfigurationException
- from cassandra.policies import RoundRobinPolicy
- 
+@@ -32,7 +32,7 @@ from cassandra.cluster import Cluster
+ from cassandra.protocol import ConfigurationException
+
  try:
 -    from ccmlib.cluster import Cluster as CCMCluster
 +    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
-@@ -124,13 +124,7 @@ else:
+@@ -120,13 +120,7 @@ else:
      CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
- 
+
  CCM_KWARGS = {}
 -if CASSANDRA_DIR:
 -    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
@@ -23,9 +23,29 @@ index 4996af2..c448e60 100644
 -    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
 -    CCM_KWARGS['version'] = CASSANDRA_VERSION
 +CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
- 
+
  if DSE_VERSION:
      log.info('Using DSE version: %s', DSE_VERSION)
+@@ -266,7 +260,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+                 CCM_CLUSTER = DseCluster(path, cluster_name, **CCM_KWARGS)
+             else:
+                 CCM_CLUSTER = CCMCluster(path, cluster_name, **CCM_KWARGS)
+-            CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
++            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental': True})
+             if CASSANDRA_VERSION >= '2.2':
+                 CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
+                 if CASSANDRA_VERSION >= '3.0':
+@@ -278,10 +272,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+             CCM_CLUSTER.populate(nodes, ipformat=ipformat)
+     try:
+         jvm_args = []
+-        # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
+-        if PROTOCOL_VERSION >= 4:
+-            jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
+-
+         if start:
+             if(len(workloads) > 0):
+                 for node in CCM_CLUSTER.nodes.values():
 diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
 index ea7588a..422b749 100644
 --- a/tests/integration/standard/test_prepared_statements.py

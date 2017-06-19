@@ -14,9 +14,38 @@ tests:
     - tests.integration.standard.test_metadata.DynamicCompositeTypeTest.test_dct_alias
     - tests.integration.standard.test_metadata.HostMetatDataTests.test_host_release_version
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_replicas
+    # issue #2501 - remove the test below from ignored when fixed
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_compression_disabled
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_refresh_user_type_metadata_proto_2
     - tests.integration.standard.test_policies.SpecExecTest.test_speculative_execution
     - tests.integration.standard.test_query.LightweightTransactionTests.test_no_connection_refused_on_timeout
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
+    # issue #2504 - remove the test below from ignored when fixed
+    - tests.integration.standard.test_query.MaterializedViewQueryTest.test_mv_filtering
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
+    - tests.integration.standard.test_cluster.ClusterTests.test_refresh_schema_keyspace
+    - tests.integration.standard.test_cluster.ClusterTests.test_refresh_schema_table
+v4_tests:
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_custom_payload
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace_and_custom_payload
+    - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_basic
+    - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_batching
+    - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_prepared
+    - tests.integration.standard.test_metadata.FunctionMetadata.test_function_cql_called_on_null
+    - tests.integration.standard.test_metadata.FunctionMetadata.test_function_no_parameters
+    - tests.integration.standard.test_metadata.FunctionMetadata.test_function_same_name_diff_types
+    - tests.integration.standard.test_metadata.FunctionMetadata.test_functions_after_udt
+    - tests.integration.standard.test_metadata.FunctionMetadata.test_functions_follow_keyspace_alter
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_refresh_schema_metadata
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_refresh_user_aggregate_metadata
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_refresh_user_function_metadata
+    - tests.integration.standard.test_metadata.AggregateMetadata.test_return_type_meta
+    - tests.integration.standard.test_metadata.AggregateMetadata.test_init_cond
+    - tests.integration.standard.test_metadata.AggregateMetadata.test_aggregates_after_functions
+    - tests.integration.standard.test_metadata.AggregateMetadata.test_same_name_diff_types
+    - tests.integration.standard.test_metadata.AggregateMetadata.test_aggregates_follow_keyspace_alter
+    - tests.integration.standard.test_metadata.AggregateMetadata.test_cql_optional_params
