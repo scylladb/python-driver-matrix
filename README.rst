@@ -1,6 +1,9 @@
 Python Driver Matrix
 ====================
 
+Running locally
+***************
+
 This repository contains wrappers for the python driver tests located in datastax's python driver's repository:
 
 https://github.com/datastax/python-driver
@@ -19,4 +22,28 @@ Keep in mind that all those repos should be under a same base directory
 
     python3 main.py ../python-driver ../scylla --tests tests.integration.standard
 
-Then the tests should run.
+
+
+Running locally
+***************
+
+other option running with docker image::
+
+    export INSTALL_DIRECTORY=/home/fruch/Projects/scylla-next
+
+    # running with anything other then release, this should be added
+    # export CASSANDRA_DIR=/home/fruch/Projects/scylla-next/build/debug
+    ./scripts/run_test.sh python main.py ../python-driver $INSTALL_DIRECTORY --tests tests.integration.standard --versions 3.9.0 --protocol 3
+
+
+Uploading docker images
+-----------------------
+
+when doing changes to requirements.txt, or any other change to docker image, it can be uploaded like this::
+
+    export DTEST_DOCKE_IMAGE=scylladb/scylla-dtest:python2.7-$(date +'%Y%m%d')
+    docker build ./scripts -t ${DTEST_DOCKE_IMAGE}
+    docker push ${DTEST_DOCKE_IMAGE}
+    echo "${DTEST_DOCKE_IMAGE}" > scripts/image
+
+**Note:** you'll need permissions on the scylladb dockerhub organization for uploading images
