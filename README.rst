@@ -36,14 +36,20 @@ other option running with docker image::
     ./scripts/run_test.sh python main.py ../python-driver $INSTALL_DIRECTORY --tests tests.integration.standard --versions 3.9.0 --protocol 3
 
 
+running with relocatable packages::
+
+    export SCYLLA_VERSION=unstable/master:265
+    ./scripts/run_test.sh python main.py ../python-driver --tests tests.integration.standard --versions 3.9.0 --protocol 3 --scylla-version $SCYLLA_VERSION
+
+
 Uploading docker images
 -----------------------
 
 when doing changes to requirements.txt, or any other change to docker image, it can be uploaded like this::
 
-    export DTEST_DOCKE_IMAGE=scylladb/scylla-dtest:python2.7-$(date +'%Y%m%d')
-    docker build ./scripts -t ${DTEST_DOCKE_IMAGE}
-    docker push ${DTEST_DOCKE_IMAGE}
-    echo "${DTEST_DOCKE_IMAGE}" > scripts/image
+    export DTEST_DOCKER_IMAGE=scylladb/scylla-dtest:python2.7-$(date +'%Y%m%d')
+    docker build ./scripts -t ${DTEST_DOCKER_IMAGE}
+    docker push ${DTEST_DOCKER_IMAGE}
+    echo "${DTEST_DOCKER_IMAGE}" > scripts/image
 
 **Note:** you'll need permissions on the scylladb dockerhub organization for uploading images

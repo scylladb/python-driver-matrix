@@ -8,9 +8,10 @@ import processjunit
 
 class Run:
 
-    def __init__(self, python_driver_git, scylla_install_dir, tag, protocol, tests):
+    def __init__(self, python_driver_git, scylla_install_dir, tag, protocol, tests, scylla_version=None):
         self._tag = tag
         self._python_driver_git = python_driver_git
+        self._scylla_version = scylla_version
         self._scylla_install_dir = scylla_install_dir
         self._tests = tests
         self._protocol = protocol
@@ -59,7 +60,10 @@ class Run:
         result = {}
         result.update(os.environ)
         result['PROTOCOL_VERSION'] = self._protocol
-        result['INSTALL_DIRECTORY'] = self._scylla_install_dir
+        if self._scylla_version:
+            result['SCYLLA_VERSION'] = self._scylla_version
+        else:
+            result['INSTALL_DIRECTORY'] = self._scylla_install_dir
         return result
 
     def _apply_patch(self):

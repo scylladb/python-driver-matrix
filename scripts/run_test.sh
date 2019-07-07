@@ -28,40 +28,10 @@ if [[ ! -d ${PYTHON_MATRIX_DIR} ]]; then
     echo "${help_text}"
     exit 1
 fi
-
-if [[ ! -d ${PYTHON_DRIVER_DIR} ]]; then
-    echo -e "\e[31m\$PYTHON_DRIVER_DIR = $PYTHON_DRIVER_DIR doesn't exist\e[0m"
-    echo "${help_text}"
-    exit 1
-fi
-if [[ ! -d ${TOOLS_JAVA_DIR} ]]; then
-    echo -e "\e[31m\$TOOLS_JAVA_DIR = $TOOLS_JAVA_DIR doesn't exist\e[0m"
-    echo "${help_text}"
-    exit 1
-fi
-if [[ ! -d ${JMX_DIR} ]]; then
-    echo -e "\e[31m\$JMX_DIR = $JMX_DIR doesn't exist\e[0m"
-    echo "${help_text}"
-    exit 1
-fi
-if [[ ! -d ${PYTHON_MATRIX_DIR} ]]; then
-    echo -e "\e[31m\$PYTHON_MATRIX_DIR = $PYTHON_MATRIX_DIR doesn't exist\e[0m"
-    echo "${help_text}"
-    exit 1
-fi
 if [[ ! -d ${CCM_DIR} ]]; then
     echo -e "\e[31m\$CCM_DIR = $CCM_DIR doesn't exist\e[0m"
     echo "${help_text}"
     exit 1
-fi
-
-if [[ ! -d ${SCYLLA_DBUILD_SO_DIR} ]]; then
-    echo "scylla was built with dbuild, and SCYLLA_DBUILD_SO_DIR wasn't supplied or exists"
-    cd ${INSTALL_DIRECTORY}
-    set +e
-    ./tools/toolchain/dbuild -v ${PYTHON_MATRIX_DIR}/scripts/dbuild_collect_so.sh:/bin/dbuild_collect_so.sh -- dbuild_collect_so.sh build/`basename ${CASSANDRA_DIR}`/scylla dynamic_libs/
-    set -e
-    cd -
 fi
 
 if [[ ! -d ${HOME}/.ccm ]]; then
@@ -78,19 +48,53 @@ else
 WORKSPACE_MNT=""
 fi
 
+if [[ -z ${SCYLLA_VERSION} ]]; then
+
+    if [[ ! -d ${TOOLS_JAVA_DIR} ]]; then
+        echo -e "\e[31m\$TOOLS_JAVA_DIR = $TOOLS_JAVA_DIR doesn't exist\e[0m"
+        echo "${help_text}"
+        exit 1
+    fi
+    if [[ ! -d ${JMX_DIR} ]]; then
+        echo -e "\e[31m\$JMX_DIR = $JMX_DIR doesn't exist\e[0m"
+        echo "${help_text}"
+        exit 1
+    fi
+
+    if [[ ! -d ${SCYLLA_DBUILD_SO_DIR} ]]; then
+        echo "scylla was built with dbuild, and SCYLLA_DBUILD_SO_DIR wasn't supplied or exists"
+        cd ${INSTALL_DIRECTORY}
+        set +e
+        ./tools/toolchain/dbuild -v ${PYTHON_MATRIX_DIR}/scripts/dbuild_collect_so.sh:/bin/dbuild_collect_so.sh -- dbuild_collect_so.sh build/`basename ${CASSANDRA_DIR}`/scylla dynamic_libs/
+        set -e
+        cd -
+    fi
+
+    DOCKER_COMMAND_PARAMS="
+    -v ${INSTALL_DIRECTORY}:${INSTALL_DIRECTORY} \
+    -v ${TOOLS_JAVA_DIR}:${TOOLS_JAVA_DIR} \
+    -v ${JMX_DIR}:${JMX_DIR} \
+    -e SCYLLA_DBUILD_SO_DIR \
+    -e CASSANDRA_DIR \
+    -e INSTALL_DIRECTORY
+    "
+
+else
+    DOCKER_COMMAND_PARAMS="
+    -e SCYLLA_VERSION \
+    -e SCYLLA_PACKAGE \
+    -e SCYLLA_JAVA_TOOLS_PACKAGE \
+    -e SCYLLA_JMX_PACKAGE
+    "
+fi
 
 docker_cmd="docker run --detach=true \
     ${WORKSPACE_MNT} \
+    ${DOCKER_COMMAND_PARAMS} \
     -v ${PYTHON_MATRIX_DIR}:${PYTHON_MATRIX_DIR} \
     -v ${PYTHON_DRIVER_DIR}:${PYTHON_DRIVER_DIR} \
-    -v ${TOOLS_JAVA_DIR}:${TOOLS_JAVA_DIR} \
-    -v ${JMX_DIR}:${JMX_DIR} \
     -v ${CCM_DIR}:${CCM_DIR} \
-    -v ${INSTALL_DIRECTORY}:${INSTALL_DIRECTORY} \
-    -e CASSANDRA_DIR \
-    -e INSTALL_DIRECTORY \
     -e HOME \
-    -e SCYLLA_DBUILD_SO_DIR \
     -e SCYLLA_EXT_OPTS \
     -e LC_ALL=en_US.UTF-8 \
     -e NODE_TOTAL \
