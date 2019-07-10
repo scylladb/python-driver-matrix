@@ -16,7 +16,7 @@ def main(python_driver_git, scylla_install_dir, tests, versions, protocols, scyl
     status = 0
     for result in results:
         logging.info(result)
-        if result.summary['failure'] > 0:
+        if result.summary['failure'] > 0 or result.summary['error']:
             status = 1
     quit(status)
 
