@@ -1,19 +1,19 @@
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index 64efcaa..ca53dcd 100644
+index 64efcaa4..d093e2b0 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
 @@ -32,7 +32,7 @@ from cassandra.cluster import Cluster
  from cassandra.protocol import ConfigurationException
-
+ 
  try:
 -    from ccmlib.cluster import Cluster as CCMCluster
 +    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
-@@ -120,13 +120,7 @@ else:
+@@ -120,13 +120,10 @@ else:
      CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
-
+ 
  CCM_KWARGS = {}
 -if CASSANDRA_DIR:
 -    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
@@ -22,11 +22,14 @@ index 64efcaa..ca53dcd 100644
 -else:
 -    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
 -    CCM_KWARGS['version'] = CASSANDRA_VERSION
-+CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
-
++if os.getenv('INSTALL_DIRECTORY'):
++    CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
++elif os.getenv('SCYLLA_VERSION'):
++    CCM_KWARGS['cassandra_version'] = os.path.join(os.getenv('SCYLLA_VERSION'))
+ 
  if DSE_VERSION:
      log.info('Using DSE version: %s', DSE_VERSION)
-@@ -266,7 +260,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+@@ -266,7 +263,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
                  CCM_CLUSTER = DseCluster(path, cluster_name, **CCM_KWARGS)
              else:
                  CCM_CLUSTER = CCMCluster(path, cluster_name, **CCM_KWARGS)
@@ -35,7 +38,7 @@ index 64efcaa..ca53dcd 100644
              if CASSANDRA_VERSION >= '2.2':
                  CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                  if CASSANDRA_VERSION >= '3.0':
-@@ -278,10 +272,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+@@ -278,10 +275,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
              CCM_CLUSTER.populate(nodes, ipformat=ipformat)
      try:
          jvm_args = []
@@ -47,7 +50,7 @@ index 64efcaa..ca53dcd 100644
              if(len(workloads) > 0):
                  for node in CCM_CLUSTER.nodes.values():
 diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
-index ea7588a..422b749 100644
+index 63f62f23..0252d1df 100644
 --- a/tests/integration/standard/test_prepared_statements.py
 +++ b/tests/integration/standard/test_prepared_statements.py
 @@ -123,7 +123,7 @@ class PreparedStatementTests(unittest.TestCase):
