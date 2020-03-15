@@ -1,5 +1,5 @@
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index 62a58896..3b770e40 100644
+index 62a58896..fd6d1da5 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
 @@ -32,7 +32,7 @@ from cassandra.cluster import Cluster
@@ -34,7 +34,7 @@ index 62a58896..3b770e40 100644
              else:
                  CCM_CLUSTER = CCMCluster(path, cluster_name, **CCM_KWARGS)
 -            CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
-+            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental': True})
++            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental_features': ['lwt', 'udf']})
              if CASSANDRA_VERSION >= '2.2':
                  CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                  if CASSANDRA_VERSION >= '3.0':
