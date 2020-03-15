@@ -34,7 +34,7 @@ index d3102f67..e4627189 100644
              else:
                  CCM_CLUSTER = CCMCluster(path, cluster_name, **CCM_KWARGS)
 -            CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
-+            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental': True})
++            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental_features': ['lwt', 'udf']})
              if CASSANDRA_VERSION >= '2.2':
                  CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                  if CASSANDRA_VERSION >= '3.0':
