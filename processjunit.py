@@ -6,9 +6,9 @@ import yaml
 
 class ProcessJUnit:
 
-    def __init__(self, xunitFile, ignoreFile):
+    def __init__(self, xunitFile, ignoreSet):
         tree = xml.etree.ElementTree.parse(xunitFile)
-        self._ignore = self._ignoreSet(ignoreFile)
+        self._ignore = ignoreSet
         logging.info('ignoring {}'.format(self._ignore))
         self._summary = {'testcase': 0, 'failure': 0, 'error': 0, 'skipped': 0, 'ignored_in_analysis': 0}
         for element in tree.getiterator():
@@ -18,15 +18,9 @@ class ProcessJUnit:
             if element.tag in self._summary:
                 self._summary[element.tag] += 1
 
-    def _ignoreSet(self, file):
-        logging.info('looking for ignore.yaml file {}'.format(file))
-        if not os.path.exists(file):
-            return set()
-        with open(file) as f:
-            content = yaml.load(f)
-            return set(content['tests'])
-
     def _shouldIgnore(self, element):
+        if element.get('classname') in self._ignore:
+            return True
         fullName = '{}.{}'.format(element.get('classname'), element.get('name'))
         return fullName in self._ignore
 

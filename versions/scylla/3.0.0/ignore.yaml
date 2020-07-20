@@ -1,0 +1,12 @@
+tests:
+    - tests.integration.standard.test_metadata.BadMetaTest.test_bad_index
+    - tests.integration.standard.test_metadata.IndexMapTests.test_index_follows_alter
+    - tests.integration.standard.test_metadata.IndexMapTests.test_index_updates
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_collection_indexes
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_indexes
+    - tests.integration.standard.test_metadata.TestCodeCoverage.test_case_sensitivity
+    - tests.integration.standard.test_metadata.TestCodeCoverage.test_legacy_tables
+    - tests.integration.standard.test_query.LightweightTransactionTests.test_no_connection_refused_on_timeout
+    - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update
+    - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
+    - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
