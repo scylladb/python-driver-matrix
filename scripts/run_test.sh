@@ -23,6 +23,7 @@ export DTEST_DIR=${DTEST_DIR:-`pwd`}
 export CCM_DIR=${CCM_DIR:-`pwd`/../scylla-ccm}
 export SCYLLA_DBUILD_SO_DIR=${SCYLLA_DBUILD_SO_DIR:-${INSTALL_DIRECTORY}/dynamic_libs}
 
+
 if [[ ! -d ${PYTHON_MATRIX_DIR} ]]; then
     echo -e "\e[31m\$PYTHON_MATRIX_DIR = $PYTHON_MATRIX_DIR doesn't exist\e[0m"
     echo "${help_text}"
@@ -81,10 +82,12 @@ if [[ -z ${SCYLLA_VERSION} ]]; then
 
 else
     DOCKER_COMMAND_PARAMS="
-    -e SCYLLA_VERSION \
-    -e SCYLLA_CORE_PACKAGE \
-    -e SCYLLA_JAVA_TOOLS_PACKAGE \
-    -e SCYLLA_JMX_PACKAGE
+    -e SCYLLA_VERSION=${SCYLLA_VERSION} \
+    -e MAPPED_SCYLLA_VERSION=${MAPPED_SCYLLA_VERSION} \
+    -e SCYLLA_CORE_PACKAGE=${SCYLLA_CORE_PACKAGE} \
+    -e SCYLLA_JAVA_TOOLS_PACKAGE=${SCYLLA_JAVA_TOOLS_PACKAGE} \
+    -e SCYLLA_JMX_PACKAGE=${SCYLLA_JMX_PACKAGE} \
+    -e EVENT_LOOP_MANAGER
     "
 fi
 
@@ -104,10 +107,11 @@ docker_cmd="docker run --detach=true \
     -v /etc/group:/etc/group:ro \
     -u $(id -u ${USER}):$(id -g ${USER}) \
     --tmpfs ${HOME}/.cache \
+    --tmpfs ${HOME}/.config \
     -v ${HOME}/.local:${HOME}/.local \
     -v ${HOME}/.ccm:${HOME}/.ccm \
     --network=bridge --privileged \
-    ${DOCKER_IMAGE} bash -c 'pip install --user -e ${CCM_DIR} ; export PATH=\$PATH:\${HOME}/.local/bin ; $*'"
+    ${DOCKER_IMAGE} bash -c 'pip install --force-reinstall --user -e ${CCM_DIR} ; export PATH=\$PATH:\${HOME}/.local/bin ; $*'"
 
 echo "Running Docker: $docker_cmd"
 container=$(eval $docker_cmd)

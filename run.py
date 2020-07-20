@@ -4,17 +4,22 @@ import shutil
 import subprocess
 import yaml
 import processjunit
+import tempfile
+from packaging.version import Version
 
 
 class Run:
 
-    def __init__(self, python_driver_git, scylla_install_dir, tag, protocol, tests, scylla_version=None):
+    def __init__(self, python_driver_git, python_driver_type, scylla_install_dir, tag, protocol, tests, scylla_version=None):
         self._tag = tag
         self._python_driver_git = python_driver_git
+        self._python_driver_type = python_driver_type
         self._scylla_version = scylla_version
         self._scylla_install_dir = scylla_install_dir
         self._tests = tests
         self._protocol = protocol
+        self._venv_path = None
+        self._version_folder = None
         self._xunit_file = self._get_xunit_file(self._setup_out_dir())
         self._run()
         self._junit = self._process_output()
@@ -24,11 +29,45 @@ class Run:
         return self._junit.summary
 
     def __repr__(self):
-        details = dict(version=self._tag, protocol=self._protocol)
+        details = dict(version=self._tag, protocol=self._protocol, type=self._python_driver_type)
         details.update(self._junit.summary)
-        return '{version}: v{protocol}: testcases: {testcase},' \
+        return '({type}){version}: v{protocol}: testcases: {testcase},' \
             ' failures: {failure}, errors: {error}, skipped: {skipped},' \
             ' ignored_in_analysis: {ignored_in_analysis}'.format(**details)
+
+    @property
+    def version_folder(self):
+        if self._version_folder is not None:
+            return self._version_folder
+        self._version_folder = self.__version_folder(self._python_driver_type, self._tag)
+        return self._version_folder
+
+    @staticmethod
+    def __version_folder(python_driver_type, target_tag):
+        target_version_folder = os.path.join(os.path.dirname(__file__), 'versions', python_driver_type)
+        try:
+            target_version = Version(target_tag)
+        except:
+            target_dir = os.path.join(target_version_folder, target_tag)
+            if os.path.exists(target_dir):
+                return target_dir
+            return os.path.join(target_version_folder, 'master')
+
+        tags_defined = []
+        for tag in os.listdir(target_version_folder):
+            try:
+                tag = Version(tag)
+            except:
+                continue
+            if tag:
+                tags_defined.append(tag)
+        if not tags_defined:
+            return None
+        last_valid_defined_tag = Version('0.0.0')
+        for tag in sorted(tags_defined):
+            if tag <= target_version:
+                last_valid_defined_tag = tag
+        return os.path.join(target_version_folder, str(last_valid_defined_tag))
 
     def _setup_out_dir(self):
         here = os.path.dirname(__file__)
@@ -38,22 +77,33 @@ class Run:
         return xunit_dir
 
     def _get_xunit_file(self, xunit_dir):
-        file_path = os.path.join(xunit_dir, 'nosetests.v{}.{}.xml'.format(self._protocol, self._tag))
+        file_path = os.path.join(xunit_dir, 'nosetests.{}.v{}.{}.xml'.format(
+            self._python_driver_type, self._protocol, self._tag))
         if os.path.exists(file_path):
             os.unlink(file_path)
         return file_path
 
     def _ignoreFile(self):
-        here = os.path.dirname(__file__)
-        return os.path.join(here, 'versions', self._tag, 'ignore.yaml')
+        return os.path.join(self.version_folder, 'ignore.yaml')
 
     def _ignoreSet(self):
         ignore_tests = []
-        with open(self._ignoreFile()) as f:
+        ignore_file_path = self._ignoreFile()
+        if not os.path.exists(ignore_file_path):
+            logging.info('Cannot find ignore file for version {}'.format(self._tag))
+            return set()
+        with open(ignore_file_path) as f:
             content = yaml.load(f)
-            ignore_tests.extend(content['tests'])
-            if self._protocol == '4' and 'v4_tests' in content and content['v4_tests']:
-                ignore_tests.extend(content['v4_tests'])
+            if 'tests' in content and content['tests']:
+                ignore_tests.extend(content['tests'])
+            else:
+                logging.info('No "tests" element or it is empty in ignore.yaml for version {}'.format(self._tag))
+
+            if self._protocol == '4':
+                if 'tests' in content and content['v4_tests']:
+                    ignore_tests.extend(content['v4_tests'])
+                else:
+                    logging.info('No "v4_tests" element or it is empty in ignore.yaml for version {}'.format(self._tag))
         return set(ignore_tests)
 
     def _environment(self):
@@ -67,18 +117,40 @@ class Run:
         return result
 
     def _apply_patch(self):
-        here = os.path.dirname(__file__)
-        patch_file = os.path.join(here, 'versions', self._tag, 'patch')
+        patch_file = os.path.join(self.version_folder, 'patch')
         if not os.path.exists(patch_file):
-            raise Exception('Cannot find patch for version {}'.format(self._tag))
+            logging.info('Cannot find patch for version {}'.format(self._tag))
+            return
         command = "patch -p1 -i {}".format(patch_file)
         subprocess.check_call(command, shell=True)
+
+    def _get_venv_path(self):
+        if self._venv_path is not None:
+            return self._venv_path
+        self._venv_path = os.path.join(tempfile.gettempdir(), '.venv', self._python_driver_type, self._tag)
+        return self._venv_path
+
+    def _create_venv(self):
+        subprocess.call(f"python3 -m venv {self._get_venv_path()}".split(), env=self._environment())
+
+    def _activate_venv_cmd(self):
+        return f"source {self._get_venv_path()}/bin/activate"
+
+    def _install_python_requirements(self):
+        self._create_venv()
+        for requirement_file in ['./requirements.txt', './test-requirements.txt']:
+            if not os.path.exists(requirement_file):
+                continue
+            subprocess.call(f"{self._activate_venv_cmd()} ; pip install --user --force-reinstall -r {requirement_file}",
+                            shell=True,
+                            env=self._environment())
 
     def _run(self):
         os.chdir(self._python_driver_git)
         subprocess.check_call('git checkout .'.format(self._tag), shell=True)
         subprocess.check_call('git checkout {}'.format(self._tag), shell=True)
         self._apply_patch()
+        self._install_python_requirements()
         exclude_str = ' '
         for ignore_element in self._ignoreSet():
             ignore_element = ignore_element.split('.')[-1]
@@ -88,7 +160,7 @@ class Run:
         subprocess.call(cmd.split(), env=self._environment())
 
     def _process_output(self):
-        junit = processjunit.ProcessJUnit(self._xunit_file, self._ignoreFile())
+        junit = processjunit.ProcessJUnit(self._xunit_file, self._ignoreSet())
         content = open(self._xunit_file).read()
         open(self._xunit_file, 'w').write(content.replace('classname="', 'classname="version_{}_v{}_'.format(
             self._tag, self._protocol)))

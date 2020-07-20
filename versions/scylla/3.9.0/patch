@@ -1,0 +1,83 @@
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index d3102f67..e4627189 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -35,7 +35,7 @@ from cassandra.protocol import ConfigurationException
+ from cassandra.policies import RoundRobinPolicy
+ 
+ try:
+-    from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+@@ -126,13 +126,10 @@ else:
+     CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
+ 
+ CCM_KWARGS = {}
+-if CASSANDRA_DIR:
+-    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+-    CCM_KWARGS['install_dir'] = CASSANDRA_DIR
+-
+-else:
+-    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
+-    CCM_KWARGS['version'] = CASSANDRA_VERSION
++if os.getenv('INSTALL_DIRECTORY'):
++    CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
++elif os.getenv('SCYLLA_VERSION'):
++    CCM_KWARGS['cassandra_version'] = os.path.join(os.getenv('SCYLLA_VERSION'))
+ 
+ if DSE_VERSION:
+     log.info('Using DSE version: %s', DSE_VERSION)
+@@ -348,7 +345,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+                 CCM_CLUSTER = DseCluster(path, cluster_name, **CCM_KWARGS)
+             else:
+                 CCM_CLUSTER = CCMCluster(path, cluster_name, **CCM_KWARGS)
+-            CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
++            CCM_CLUSTER.set_configuration_options({'start_native_transport': True, 'experimental_features': ['lwt', 'udf']})
+             if CASSANDRA_VERSION >= '2.2':
+                 CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
+                 if CASSANDRA_VERSION >= '3.0':
+@@ -360,11 +357,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=[]):
+             CCM_CLUSTER.populate(nodes, ipformat=ipformat)
+     try:
+         jvm_args = []
+-        # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
+-
+-        if 'graph' not in workloads:
+-            if PROTOCOL_VERSION >= 4:
+-                jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
+         if(len(workloads) > 0):
+             for node in CCM_CLUSTER.nodes.values():
+                 node.set_workloads(workloads)
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+index 50a0ed41..c50fd763 100644
+--- a/tests/integration/standard/test_prepared_statements.py
++++ b/tests/integration/standard/test_prepared_statements.py
+@@ -127,7 +127,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_missing_primary_key(self, session):
+         statement_to_prepare = """INSERT INTO test3rf.test (v) VALUES  (?)"""
+         # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
+@@ -146,7 +146,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_missing_primary_key_dicts(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+         # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
+@@ -163,7 +163,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_too_many_bind_values(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+          # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)

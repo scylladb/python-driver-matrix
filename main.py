@@ -7,12 +7,12 @@ import run
 logging.basicConfig(level=logging.INFO)
 
 
-def main(python_driver_git, scylla_install_dir, tests, versions, protocols, scylla_version):
+def main(python_driver_git, scylla_install_dir, driver_type, tests, versions, protocols, scylla_version):
     results = []
     for version in versions:
         for protocol in protocols:
             logging.info('=== PYTHON DRIVER VERSION {}, PROTOCOL v{} ==='.format(version, protocol))
-            results.append(run.Run(python_driver_git, scylla_install_dir, version, protocol, tests, scylla_version=scylla_version))
+            results.append(run.Run(python_driver_git, driver_type, scylla_install_dir, version, protocol, tests, scylla_version=scylla_version))
 
     logging.info('=== PYTHON DRIVER MATRIX RESULTS ===')
     status = 0
@@ -31,6 +31,8 @@ if __name__ == '__main__':
     parser.add_argument('scylla_install_dir',
                         help='folder with scylla installation, e.g. a checked out git scylla has been built',
                         nargs='?', default='')
+    parser.add_argument('--driver-type', help='Type of python-driver ("scylla", "cassandra" or "datastax")',
+                        dest='driver_type')
     parser.add_argument('--versions', default=versions,
                         help='python-driver versions to test, default={}'.format(','.join(versions)))
     parser.add_argument('--tests', default='tests.integration.standard',
@@ -43,4 +45,4 @@ if __name__ == '__main__':
         versions = arguments.versions.split(',')
     if not isinstance(arguments.protocols, list):
         protocols = arguments.protocols.split(',')
-    main(arguments.python_driver_git, arguments.scylla_install_dir, arguments.tests, versions, protocols, arguments.scylla_version)
+    main(arguments.python_driver_git, arguments.scylla_install_dir, arguments.driver_type, arguments.tests, versions, protocols, arguments.scylla_version)

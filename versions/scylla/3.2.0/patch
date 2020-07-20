@@ -1,0 +1,31 @@
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index 4b3afaa0..6a3c1114 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -32,7 +32,7 @@ from cassandra.cluster import Cluster
+ from cassandra.protocol import ConfigurationException
+ 
+ try:
+-    from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMCluster
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+@@ -111,13 +111,10 @@ else:
+     CASSANDRA_VERSION = os.getenv('CASSANDRA_VERSION', default_cassandra_version)
+ 
+ CCM_KWARGS = {}
+-if CASSANDRA_DIR:
+-    log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+-    CCM_KWARGS['install_dir'] = CASSANDRA_DIR
+-
+-else:
+-    log.info('Using Cassandra version: %s', CASSANDRA_VERSION)
+-    CCM_KWARGS['version'] = CASSANDRA_VERSION
++if os.getenv('INSTALL_DIRECTORY'):
++    CCM_KWARGS['install_dir'] = os.path.join(os.getenv('INSTALL_DIRECTORY'))
++elif os.getenv('SCYLLA_VERSION'):
++    CCM_KWARGS['cassandra_version'] = os.path.join(os.getenv('SCYLLA_VERSION'))
+ 
+ if DSE_VERSION:
+     log.info('Using DSE version: %s', DSE_VERSION)
