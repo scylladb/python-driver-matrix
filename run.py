@@ -22,7 +22,6 @@ class Run:
         self._version_folder = None
         self._xunit_file = self._get_xunit_file(self._setup_out_dir())
         self._run()
-        self._junit = self._process_output()
 
     @property
     def summary(self):
@@ -117,12 +116,17 @@ class Run:
         return result
 
     def _apply_patch(self):
-        patch_file = os.path.join(self.version_folder, 'patch')
-        if not os.path.exists(patch_file):
-            logging.info('Cannot find patch for version {}'.format(self._tag))
-            return
-        command = "patch -p1 -i {}".format(patch_file)
-        subprocess.check_call(command, shell=True)
+        try:
+            patch_file = os.path.join(self.version_folder, 'patch')
+            if not os.path.exists(patch_file):
+                logging.info('Cannot find patch for version {}'.format(self._tag))
+                return True
+            command = "patch -p1 -i {}".format(patch_file)
+            subprocess.check_call(command, shell=True)
+            return True
+        except Exception as exc:
+            logging.error("Failed to apply patch to version {}, with: {}".format(self._tag, str(exc)))
+            return False
 
     def _get_venv_path(self):
         if self._venv_path is not None:
@@ -137,20 +141,38 @@ class Run:
         return f"source {self._get_venv_path()}/bin/activate"
 
     def _install_python_requirements(self):
-        self._create_venv()
-        for requirement_file in ['./requirements.txt', './test-requirements.txt']:
-            if not os.path.exists(requirement_file):
-                continue
-            subprocess.call(f"{self._activate_venv_cmd()} ; pip install --user --force-reinstall -r {requirement_file}",
-                            shell=True,
-                            env=self._environment())
+        try:
+            self._create_venv()
+            for requirement_file in ['./requirements.txt', './test-requirements.txt']:
+                if not os.path.exists(requirement_file):
+                    continue
+                subprocess.call(f"{self._activate_venv_cmd()} ; pip install --user --force-reinstall -r {requirement_file}",
+                                shell=True,
+                                env=self._environment())
+            return True
+        except Exception as exc:
+            logging.error("Failed to install python requirements for version {}, with: {}".format(self._tag, str(exc)))
+            return False
+
+    def _checkout_brach(self):
+        try:
+            subprocess.check_call('git checkout .'.format(self._tag), shell=True)
+            subprocess.check_call('git checkout {}'.format(self._tag), shell=True)
+        except Exception as exc:
+            logging.error("Failed to branch for version {}, with: {}".format(self._tag, str(exc)))
+            return False
 
     def _run(self):
         os.chdir(self._python_driver_git)
-        subprocess.check_call('git checkout .'.format(self._tag), shell=True)
-        subprocess.check_call('git checkout {}'.format(self._tag), shell=True)
-        self._apply_patch()
-        self._install_python_requirements()
+        if not self._checkout_brach():
+            self._publish_fake_result()
+            return
+        if not self._apply_patch():
+            self._publish_fake_result()
+            return
+        if not self._install_python_requirements():
+            self._publish_fake_result()
+            return
         exclude_str = ' '
         for ignore_element in self._ignoreSet():
             ignore_element = ignore_element.split('.')[-1]
@@ -158,6 +180,7 @@ class Run:
         cmd = 'nosetests --with-xunit --xunit-file {} -s {} {}'.format(self._xunit_file, self._tests, exclude_str)
         logging.info(cmd)
         subprocess.call(cmd.split(), env=self._environment())
+        self._junit = self._process_output()
 
     def _process_output(self):
         junit = processjunit.ProcessJUnit(self._xunit_file, self._ignoreSet())
@@ -165,3 +188,16 @@ class Run:
         open(self._xunit_file, 'w').write(content.replace('classname="', 'classname="version_{}_v{}_'.format(
             self._tag, self._protocol)))
         return junit
+
+    def _publish_fake_result(self):
+        self._junit = FakeJunitResults(1, 0, 0)
+
+
+class FakeJunitResults:
+    def __init__(self, failure, error, skipped):
+        self.summary = {
+            'failure': failure,
+            'error': error,
+            'skipped': skipped,
+            'ignored_in_analysis': 0
+        }
