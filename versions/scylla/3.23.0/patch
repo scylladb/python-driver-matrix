@@ -79,10 +79,10 @@ index d6f26acb..fb2b31ed 100644
 
      try:
          jvm_args = []
-@@ -580,7 +594,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
-         if 'graph' in workloads:
-             jvm_args += ['-Xms1500M', '-Xmx1500M']
-         else:
+@@ -575,7 +589,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+         # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
+ 
+         if 'graph' not in workloads:
 -            if PROTOCOL_VERSION >= 4:
 +            if PROTOCOL_VERSION >= 4 and not SCYLLA_VERSION:
                  jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
