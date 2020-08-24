@@ -10,7 +10,8 @@ from packaging.version import Version
 
 class Run:
 
-    def __init__(self, python_driver_git, python_driver_type, scylla_install_dir, tag, protocol, tests, scylla_version=None):
+    def __init__(self, python_driver_git, python_driver_type, scylla_install_dir, tag, protocol, tests,
+                 scylla_version=None):
         self._tag = tag
         self._python_driver_git = python_driver_git
         self._python_driver_type = python_driver_type
@@ -154,17 +155,21 @@ class Run:
             logging.error("Failed to install python requirements for version {}, with: {}".format(self._tag, str(exc)))
             return False
 
-    def _checkout_brach(self):
+    def _checkout_branch(self):
         try:
-            subprocess.check_call('git checkout .'.format(self._tag), shell=True)
-            subprocess.check_call('git checkout {}'.format(self._tag), shell=True)
+            subprocess.check_call('git checkout .', shell=True)
+            if self._python_driver_type == 'scylla':
+                subprocess.check_call('git checkout {}-scylla'.format(self._tag), shell=True)
+            else:
+                subprocess.check_call('git checkout {}'.format(self._tag), shell=True)
+            return True
         except Exception as exc:
             logging.error("Failed to branch for version {}, with: {}".format(self._tag, str(exc)))
             return False
 
     def _run(self):
         os.chdir(self._python_driver_git)
-        if not self._checkout_brach():
+        if not self._checkout_branch():
             self._publish_fake_result()
             return
         if not self._apply_patch():
