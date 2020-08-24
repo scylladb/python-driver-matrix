@@ -190,12 +190,13 @@ class Run:
         return junit
 
     def _publish_fake_result(self):
-        self._junit = FakeJunitResults(1, 0, 0)
+        self._junit = FakeJunitResults(1, 1, 0, 0)
 
 
 class FakeJunitResults:
-    def __init__(self, failure, error, skipped):
+    def __init__(self, testcase, failure, error, skipped):
         self.summary = {
+            'testcase': testcase,
             'failure': failure,
             'error': error,
             'skipped': skipped,
