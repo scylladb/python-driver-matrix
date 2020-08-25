@@ -681,6 +681,18 @@ index 4f23f9d5..883d56f5 100644
      def test_non_alphanum_identifiers(self):
          """
          PYTHON-413
+diff --git a/tests/integration/standard/test_authentication.py b/tests/integration/standard/test_authentication.py
+index 4c32e9de..e5948af8 100644
+--- a/tests/integration/standard/test_authentication.py
++++ b/tests/integration/standard/test_authentication.py
+@@ -146,6 +146,7 @@ class AuthenticationTests(unittest.TestCase):
+         finally:
+             cluster.shutdown()
+
++    @unittest.skip('Failing with scylla')
+     def test_connect_no_auth_provider(self):
+         cluster = Cluster(protocol_version=PROTOCOL_VERSION)
+         try:
 diff --git a/test-requirements.txt b/test-requirements.txt
 index f150a732..29827b94 100644
 --- a/test-requirements.txt

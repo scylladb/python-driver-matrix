@@ -52,12 +52,13 @@ index d6f26acb..fb2b31ed 100644
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -559,8 +566,15 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
- 
+@@ -530,11 +537,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
 -                CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
 -                CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
+-                if cassandra_version >= Version('2.2'):
 +                if SCYLLA_VERSION:
 +                    # `experimental: True` enable all experimental features.
 +                    # CDC is causing an issue (can't start cluster with multiple seeds)
@@ -67,9 +68,13 @@ index d6f26acb..fb2b31ed 100644
 +                else:
 +                    CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
 +                    CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
-                 if Version(cassandra_version) >= Version('2.2'):
++                if Version(cassandra_version) >= Version('2.2'):
                      CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
-                     if Version(cassandra_version) >= Version('3.0'):
+-                    if cassandra_version >= Version('3.0'):
++                    if Version(cassandra_version) >= Version('3.0'):
+                         CCM_CLUSTER.set_configuration_options({'enable_scripted_user_defined_functions': True})
+                 common.switch_cluster(path, cluster_name)
+                 CCM_CLUSTER.set_configuration_options(configuration_options)
 @@ -575,7 +589,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
          # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
  
