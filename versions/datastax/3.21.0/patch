@@ -1,8 +1,21 @@
+diff --git a/test-requirements.txt b/test-requirements.txt
+index d0321808..329f6c6c 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
+@@ -2,7 +2,7 @@
+ scales
+ nose
+ mock>1.1
+-ccm>=2.1.2
++#ccm>=2.1.2
+ unittest2
+ pytz
+ sure
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index d6f26acb..fb2b31ed 100644
+index 7c89ebcf..a64f569f 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
-@@ -36,6 +36,7 @@ from itertools import groupby
+@@ -35,6 +35,7 @@ from itertools import groupby
  import six
  import shutil
  
@@ -10,7 +23,7 @@ index d6f26acb..fb2b31ed 100644
  from cassandra import OperationTimedOut, ReadTimeout, ReadFailure, WriteTimeout, WriteFailure, AlreadyExists,\
      InvalidRequest
  from cassandra.protocol import ConfigurationException
-@@ -44,6 +45,7 @@ from cassandra import ProtocolVersion
+@@ -43,6 +44,7 @@ from cassandra import ProtocolVersion
  try:
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster import Cluster as CCMCluster
@@ -18,7 +31,7 @@ index d6f26acb..fb2b31ed 100644
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
  except ImportError as e:
-@@ -161,16 +163,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
+@@ -155,16 +157,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
  SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
  CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
  
@@ -43,7 +56,7 @@ index d6f26acb..fb2b31ed 100644
      try:
          cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
      except:
-@@ -448,7 +455,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
+@@ -430,7 +437,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
          if [len(list(nodes)) for dc, nodes in
                  groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
              for node in CCM_CLUSTER.nodelist():
@@ -52,8 +65,18 @@ index d6f26acb..fb2b31ed 100644
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -530,11 +537,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
-
+@@ -458,9 +465,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+     elif ccm_options is None:
+         ccm_options = CCM_KWARGS.copy()
+ 
+-    if 'version' in ccm_options and not isinstance(ccm_options['version'], Version):
+-        ccm_options['version'] = Version(ccm_options['version'])
+-
+     cassandra_version = ccm_options.get('version', CCM_VERSION)
+     dse_version = ccm_options.get('version', DSE_VERSION)
+ 
+@@ -524,11 +528,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+ 
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
 -                CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
@@ -75,7 +98,7 @@ index d6f26acb..fb2b31ed 100644
                          CCM_CLUSTER.set_configuration_options({'enable_scripted_user_defined_functions': True})
                  common.switch_cluster(path, cluster_name)
                  CCM_CLUSTER.set_configuration_options(configuration_options)
-@@ -575,7 +589,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -540,7 +551,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
          # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
  
          if 'graph' not in workloads:
@@ -84,6 +107,18 @@ index d6f26acb..fb2b31ed 100644
                  jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
          if len(workloads) > 0:
              for node in CCM_CLUSTER.nodes.values():
+diff --git a/tests/integration/standard/test_authentication.py b/tests/integration/standard/test_authentication.py
+index 4c32e9de..e5948af8 100644
+--- a/tests/integration/standard/test_authentication.py
++++ b/tests/integration/standard/test_authentication.py
+@@ -146,6 +146,7 @@ class AuthenticationTests(unittest.TestCase):
+         finally:
+             cluster.shutdown()
+ 
++    @unittest.skip('Failing with scylla')
+     def test_connect_no_auth_provider(self):
+         cluster = Cluster(protocol_version=PROTOCOL_VERSION)
+         try:
 diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
 index caac84dd..f0dd76ec 100644
 --- a/tests/integration/standard/test_authentication_misconfiguration.py
@@ -117,7 +152,7 @@ index 1092af77..b29e7773 100644
  
      @classmethod
 diff --git a/tests/integration/standard/test_cluster.py b/tests/integration/standard/test_cluster.py
-index 2314931b..312dc1b8 100644
+index eae7d64b..caac2caa 100644
 --- a/tests/integration/standard/test_cluster.py
 +++ b/tests/integration/standard/test_cluster.py
 @@ -273,6 +273,7 @@ class ClusterTests(unittest.TestCase):
@@ -128,7 +163,7 @@ index 2314931b..312dc1b8 100644
      def test_invalid_protocol_negotation(self):
          """
          Test for protocol negotiation when explicit versions are set
-@@ -1124,6 +1125,7 @@ class ClusterTests(unittest.TestCase):
+@@ -1133,6 +1134,7 @@ class ClusterTests(unittest.TestCase):
              else:
                  raise Exception("session.execute didn't time out in {0} tries".format(max_retry_count))
  
@@ -136,7 +171,7 @@ index 2314931b..312dc1b8 100644
      def test_replicas_are_queried(self):
          """
          Test that replicas are queried first for TokenAwarePolicy. A table with RF 1
-@@ -1493,6 +1495,7 @@ class BetaProtocolTest(unittest.TestCase):
+@@ -1548,6 +1550,7 @@ class BetaProtocolTest(unittest.TestCase):
          except Exception as e:
              self.fail("Unexpected error encountered {0}".format(e.message))
  
@@ -144,7 +179,7 @@ index 2314931b..312dc1b8 100644
      @protocolv5
      def test_valid_protocol_version_beta_options_connect(self):
          """
-@@ -1547,6 +1550,7 @@ class DeprecationWarningTest(unittest.TestCase):
+@@ -1602,6 +1605,7 @@ class DeprecationWarningTest(unittest.TestCase):
              self.assertIn("Cluster.set_meta_refresh_enabled is deprecated and will be removed in 4.0.",
                            str(w[0].message))
  
@@ -209,7 +244,7 @@ index 2ab84767..c87ebc9d 100644
      def test_protocol_divergence_v5_fail_by_flag_uses_int(self):
          """
 diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
-index 9fae550f..24fe81df 100644
+index a5038672..c1c312d0 100644
 --- a/tests/integration/standard/test_metadata.py
 +++ b/tests/integration/standard/test_metadata.py
 @@ -240,6 +240,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
@@ -522,7 +557,7 @@ index d314846e..330b4b8e 100644
      def test_id_is_not_updated_conditional_v5(self):
          """
 diff --git a/tests/integration/standard/test_query.py b/tests/integration/standard/test_query.py
-index 63f94399..71e6b949 100644
+index 62478974..1c7b6688 100644
 --- a/tests/integration/standard/test_query.py
 +++ b/tests/integration/standard/test_query.py
 @@ -472,6 +472,7 @@ class ForcedHostIndexPolicy(RoundRobinPolicy):
@@ -677,28 +712,3 @@ index 4f23f9d5..883d56f5 100644
      def test_non_alphanum_identifiers(self):
          """
          PYTHON-413
-diff --git a/tests/integration/standard/test_authentication.py b/tests/integration/standard/test_authentication.py
-index 4c32e9de..e5948af8 100644
---- a/tests/integration/standard/test_authentication.py
-+++ b/tests/integration/standard/test_authentication.py
-@@ -146,6 +146,7 @@ class AuthenticationTests(unittest.TestCase):
-         finally:
-             cluster.shutdown()
-
-+    @unittest.skip('Failing with scylla')
-     def test_connect_no_auth_provider(self):
-         cluster = Cluster(protocol_version=PROTOCOL_VERSION)
-         try:
-diff --git a/test-requirements.txt b/test-requirements.txt
-index f150a732..29827b94 100644
---- a/test-requirements.txt
-+++ b/test-requirements.txt
-@@ -2,7 +2,7 @@
- scales
- nose
- mock>1.1
--ccm>=2.1.2
-+#ccm>=2.1.2
- unittest2
- pytz
- sure

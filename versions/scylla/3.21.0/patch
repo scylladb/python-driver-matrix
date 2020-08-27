@@ -1,8 +1,21 @@
+diff --git a/test-requirements.txt b/test-requirements.txt
+index b49b9b8a..49d7168f 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
+@@ -2,7 +2,7 @@
+ scales
+ nose
+ mock>1.1
+-ccm>=2.1.2
++#ccm>=2.1.2
+ unittest2
+ pytz
+ sure
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index d6f26acb..fb2b31ed 100644
+index 0a3d6542..f66c6aa6 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
-@@ -36,6 +36,7 @@ from itertools import groupby
+@@ -35,6 +35,7 @@ from itertools import groupby
  import six
  import shutil
  
@@ -10,7 +23,7 @@ index d6f26acb..fb2b31ed 100644
  from cassandra import OperationTimedOut, ReadTimeout, ReadFailure, WriteTimeout, WriteFailure, AlreadyExists,\
      InvalidRequest
  from cassandra.protocol import ConfigurationException
-@@ -44,6 +45,7 @@ from cassandra import ProtocolVersion
+@@ -43,6 +44,7 @@ from cassandra import ProtocolVersion
  try:
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster import Cluster as CCMCluster
@@ -18,7 +31,7 @@ index d6f26acb..fb2b31ed 100644
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
  except ImportError as e:
-@@ -161,16 +163,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
+@@ -155,16 +157,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
  SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
  CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
  
@@ -43,7 +56,7 @@ index d6f26acb..fb2b31ed 100644
      try:
          cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
      except:
-@@ -448,7 +455,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
+@@ -430,7 +437,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
          if [len(list(nodes)) for dc, nodes in
                  groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
              for node in CCM_CLUSTER.nodelist():
@@ -52,8 +65,18 @@ index d6f26acb..fb2b31ed 100644
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -530,11 +537,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
-
+@@ -458,9 +465,6 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+     elif ccm_options is None:
+         ccm_options = CCM_KWARGS.copy()
+ 
+-    if 'version' in ccm_options and not isinstance(ccm_options['version'], Version):
+-        ccm_options['version'] = Version(ccm_options['version'])
+-
+     cassandra_version = ccm_options.get('version', CCM_VERSION)
+     dse_version = ccm_options.get('version', DSE_VERSION)
+ 
+@@ -530,11 +534,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+ 
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
 -                CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
@@ -75,7 +98,7 @@ index d6f26acb..fb2b31ed 100644
                          CCM_CLUSTER.set_configuration_options({'enable_scripted_user_defined_functions': True})
                  common.switch_cluster(path, cluster_name)
                  CCM_CLUSTER.set_configuration_options(configuration_options)
-@@ -575,7 +589,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -546,7 +557,7 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
          # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
  
          if 'graph' not in workloads:
@@ -84,6 +107,18 @@ index d6f26acb..fb2b31ed 100644
                  jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
          if len(workloads) > 0:
              for node in CCM_CLUSTER.nodes.values():
+diff --git a/tests/integration/standard/test_authentication.py b/tests/integration/standard/test_authentication.py
+index 4c32e9de..e5948af8 100644
+--- a/tests/integration/standard/test_authentication.py
++++ b/tests/integration/standard/test_authentication.py
+@@ -146,6 +146,7 @@ class AuthenticationTests(unittest.TestCase):
+         finally:
+             cluster.shutdown()
+ 
++    @unittest.skip('Failing with scylla')
+     def test_connect_no_auth_provider(self):
+         cluster = Cluster(protocol_version=PROTOCOL_VERSION)
+         try:
 diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
 index caac84dd..f0dd76ec 100644
 --- a/tests/integration/standard/test_authentication_misconfiguration.py
@@ -209,7 +244,7 @@ index 2ab84767..c87ebc9d 100644
      def test_protocol_divergence_v5_fail_by_flag_uses_int(self):
          """
 diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
-index 9fae550f..24fe81df 100644
+index 6169e5d9..be5a1603 100644
 --- a/tests/integration/standard/test_metadata.py
 +++ b/tests/integration/standard/test_metadata.py
 @@ -240,6 +240,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
@@ -677,28 +712,3 @@ index 4f23f9d5..883d56f5 100644
      def test_non_alphanum_identifiers(self):
          """
          PYTHON-413
-diff --git a/tests/integration/standard/test_authentication.py b/tests/integration/standard/test_authentication.py
-index 4c32e9de..e5948af8 100644
---- a/tests/integration/standard/test_authentication.py
-+++ b/tests/integration/standard/test_authentication.py
-@@ -146,6 +146,7 @@ class AuthenticationTests(unittest.TestCase):
-         finally:
-             cluster.shutdown()
-
-+    @unittest.skip('Failing with scylla')
-     def test_connect_no_auth_provider(self):
-         cluster = Cluster(protocol_version=PROTOCOL_VERSION)
-         try:
-diff --git a/test-requirements.txt b/test-requirements.txt
-index f150a732..29827b94 100644
---- a/test-requirements.txt
-+++ b/test-requirements.txt
-@@ -2,7 +2,7 @@
- scales
- nose
- mock>1.1
--ccm>=2.1.2
-+#ccm>=2.1.2
- unittest2
- pytz
- sure
