@@ -9,7 +9,7 @@ pytz==2019.1
 sure==1.4.11
 psutil==5.6.6
 pure-sasl==0.6.1
-Twisted==19.7.0
+Twisted==20.3.0
 unittest2==1.1.0
 gevent>=1.0
 greenlet
