@@ -93,7 +93,7 @@ class Run:
             logging.info('Cannot find ignore file for version {}'.format(self._tag))
             return set()
         with open(ignore_file_path) as f:
-            content = yaml.load(f)
+            content = yaml.safe_load(f)
             if 'tests' in content and content['tests']:
                 ignore_tests.extend(content['tests'])
             else:
