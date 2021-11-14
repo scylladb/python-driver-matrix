@@ -19,6 +19,7 @@ def main(python_driver_git, scylla_install_dir, driver_type, tests, versions, pr
     for result in results:
         logging.info(result)
         if result.summary['failure'] > 0 or result.summary['error']:
+            logging.info("The 'python-driver-matrix' run failed because there are failures and/or errors")
             status = 1
     quit(status)
 
