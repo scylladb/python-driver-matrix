@@ -1,0 +1,97 @@
+# Last verified state on Nov 22, 2021 by Oren Efraimov
+# Ignore test according the protocol version
+general:
+  # test_cluster.py
+  - test_cluster.ClusterTests.test_invalid_protocol_negotation
+  - test_cluster.ClusterTests.test_replicas_are_queried
+  - test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
+
+  # test_custom_protocol_handler.py
+  - test_custom_protocol_handler.CustomProtocolHandlerTest.test_protocol_divergence_v5_fail_by_continuous_paging
+  - test_custom_protocol_handler.CustomProtocolHandlerTest.test_protocol_v5_uses_flag_int
+  - test_custom_protocol_handler.CustomProtocolHandlerTest.test_protocol_divergence_v5_fail_by_flag_uses_int
+
+  # test_client_warnings.py
+  - test_client_warnings.ClientWarningTests
+
+  # test_authentication_misconfiguration.py
+  - test_authentication_misconfiguration.MisconfiguredAuthenticationTests
+
+  # test_custom_payload.py
+  - test_custom_payload.CustomPayloadTests.test_custom_query_basic
+  - test_custom_payload.CustomPayloadTests.test_custom_query_batching
+  - test_custom_payload.CustomPayloadTests.test_custom_query_prepared
+
+  # test_udts.py
+  - test_udts.UDTTests.test_non_frozen_udts
+  - test_udts.UDTTests.test_can_insert_unprepared_registered_udts
+  - test_udts.UDTTests.test_can_register_udt_before_connecting
+  - test_udts.UDTTests.test_can_insert_prepared_unregistered_udts
+  - test_udts.UDTTests.test_can_insert_prepared_registered_udts
+  - test_udts.UDTTests.test_can_insert_nested_registered_udts
+  - test_udts.UDTTests.test_can_insert_nested_unregistered_udts
+  - test_udts.UDTTests.test_can_insert_nested_registered_udts_with_different_namedtuples
+  - test_udts.UDTTests.test_raise_error_on_nonexisting_udts
+  - test_udts.UDTTests.test_can_insert_udt_all_collection_datatypes
+  - test_udts.UDTTests.test_non_alphanum_identifiers
+
+  # test_metadata.py
+  - test_metadata.SchemaMetadataTests.test_compound_primary_keys
+  - test_metadata.SchemaMetadataTests.test_compound_primary_keys_protected
+  - test_metadata.SchemaMetadataTests.test_compound_primary_keys_more_columns
+  - test_metadata.SchemaMetadataTests.test_compound_primary_keys_compact
+  - test_metadata.SchemaMetadataTests.test_compound_primary_keys_more_columns_compact
+  - test_metadata.SchemaMetadataTests.test_compound_primary_keys_more_columns_ordering
+  - test_metadata.SchemaMetadataTests.test_counter
+  - test_metadata.SchemaMetadataTests.test_indexes
+  - test_metadata.SchemaMetadataTests.test_collection_indexes
+  - test_metadata.SchemaMetadataTests.test_compression_disabled
+  - test_metadata.SchemaMetadataTests.test_non_size_tiered_compaction
+  - test_metadata.SchemaMetadataTests.test_refresh_schema_metadata
+  - test_metadata.SchemaMetadataTests.test_refresh_keyspace_metadata
+  - test_metadata.SchemaMetadataTests.test_refresh_table_metadata
+  - test_metadata.SchemaMetadataTests.test_refresh_metadata_for_mv
+  - test_metadata.SchemaMetadataTests.test_refresh_user_type_metadata
+  - test_metadata.SchemaMetadataTests.test_refresh_user_function_metadata
+  - test_metadata.SchemaMetadataTests.test_refresh_user_aggregate_metadata
+  - test_metadata.SchemaMetadataTests.test_multiple_indices
+  - test_metadata.SchemaMetadataTests.test_table_extensions
+  - test_metadata.TestCodeCoverage.test_case_sensitivity
+  - test_metadata.TestCodeCoverage.test_replicas
+
+  # test_query.py
+  - test_query.PreparedStatementMetdataTest.test_prepared_metadata_generation
+  - test_query.LightweightTransactionTests.test_was_applied_batch_stmt
+  - test_query.QueryKeyspaceTests
+  - test_query.SimpleWithKeyspaceTests
+  - test_query.BatchWithKeyspaceTests
+  - test_query.PreparedWithKeyspaceTests
+
+  # test_prepared_statements.py
+  - test_prepared_statements.PreparedStatementInvalidationTest.test_prepared_id_is_update
+  - test_prepared_statements.PreparedStatementInvalidationTest.test_prepared_id_is_updated_across_pages
+  - test_prepared_statements.PreparedStatementInvalidationTest.test_prepare_id_is_updated_across_session
+  - test_prepared_statements.PreparedStatementInvalidationTest.test_id_is_not_updated_conditional_v4
+  - test_prepared_statements.PreparedStatementInvalidationTest.test_id_is_not_updated_conditional_v5
+
+  # test_metadata.py
+  - test_metadata.KeyspaceAlterMetadata.test_keyspace_alter
+  - test_metadata.FunctionMetadata.test_functions_after_udt
+  - test_metadata.FunctionMetadata.test_function_same_name_diff_types
+  - test_metadata.FunctionMetadata.test_function_no_parameters
+  - test_metadata.FunctionMetadata.test_functions_follow_keyspace_alter
+  - test_metadata.FunctionMetadata.test_function_cql_called_on_null
+  - test_metadata.FunctionMetadata.AggregateMetadata
+  - test_metadata.BadMetaTest.test_bad_user_function
+  - test_metadata.BadMetaTest.test_bad_user_aggregate
+  - test_metadata.DynamicCompositeTypeTest.test_dct_alias
+
+  # test_types.py
+  - test_types.TypeTests.test_can_read_composite_type
+
+
+3:
+4:
+5:
+  - test_cluster.BetaProtocolTest.test_valid_protocol_version_beta_options_connect
+6:

@@ -1,4 +1,4 @@
-tests:
+3:
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_index
     - tests.integration.standard.test_metadata.IndexMapTests.test_index_follows_alter
     - tests.integration.standard.test_metadata.IndexMapTests.test_index_updates

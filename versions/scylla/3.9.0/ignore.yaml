@@ -1,5 +1,5 @@
 # Last verified state on Dec 21, 2018 by Roy Dahan
-tests:
+3:
     - tests.integration.standard.test_authentication.AuthenticationTests.test_connect_empty_pwd
     - tests.integration.standard.test_authentication.AuthenticationTests.test_connect_wrong_pwd
     - tests.integration.standard.test_authentication.AuthenticationTests.test_connect_wrong_username
@@ -30,7 +30,7 @@ tests:
 #    - tests.integration.standard.test_cluster.ClusterTests.test_refresh_schema_table
     # issue #2962
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_multiple_indices
-v4_tests:
+4:
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_custom_payload

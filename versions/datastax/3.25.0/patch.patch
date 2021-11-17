@@ -1,0 +1,218 @@
+Index: tests/integration/standard/test_prepared_statements.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+--- a/tests/integration/standard/test_prepared_statements.py	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
++++ b/tests/integration/standard/test_prepared_statements.py	(date 1638723063633)
+@@ -168,7 +168,7 @@
+     def _run_too_many_bind_values(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+          # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
+Index: test-requirements.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test-requirements.txt b/test-requirements.txt
+--- a/test-requirements.txt	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
++++ b/test-requirements.txt	(date 1638725805913)
+@@ -2,8 +2,7 @@
+ scales
+ nose
+ mock>1.1
+-ccm>=2.1.2
+-unittest2
++#ccm>=2.1.2
+ pytz
+ sure
+ pure-sasl
+Index: tests/integration/__init__.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+--- a/tests/integration/__init__.py	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
++++ b/tests/integration/__init__.py	(date 1638723289387)
+@@ -16,7 +16,9 @@
+ from cassandra.cluster import Cluster
+ 
+ from tests import connection_class, EVENT_LOOP_MANAGER
+-Cluster.connection_class = connection_class
++
++if connection_class is not None:
++    Cluster.connection_class = connection_class
+ 
+ try:
+     import unittest2 as unittest
+@@ -36,6 +38,7 @@
+ import six
+ import shutil
+ 
++
+ from cassandra import OperationTimedOut, ReadTimeout, ReadFailure, WriteTimeout, WriteFailure, AlreadyExists,\
+     InvalidRequest
+ from cassandra.protocol import ConfigurationException
+@@ -44,6 +47,7 @@
+ try:
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMScyllaCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+ except ImportError as e:
+@@ -161,16 +165,21 @@
+ SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
+ CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
+ 
+-# Supported Clusters: Cassandra, DDAC, DSE
++# Supported Clusters: Cassandra, DDAC, DSE, Scylla
+ DSE_VERSION = None
++SCYLLA_VERSION = os.getenv('SCYLLA_VERSION', None)
+ if os.getenv('DSE_VERSION', None):  # we are testing against DSE
+     DSE_VERSION = Version(os.getenv('DSE_VERSION', None))
+     DSE_CRED = os.getenv('DSE_CREDS', None)
+     CASSANDRA_VERSION = _get_cass_version_from_dse(DSE_VERSION.base_version)
+     CCM_VERSION = DSE_VERSION.base_version
+ else:  # we are testing against Cassandra or DDAC
+-    cv_string = os.getenv('CASSANDRA_VERSION', None)
+-    mcv_string = os.getenv('MAPPED_CASSANDRA_VERSION', None)
++    if SCYLLA_VERSION:
++        cv_string = SCYLLA_VERSION
++        mcv_string = os.getenv('MAPPED_SCYLLA_VERSION', None)
++    else:
++        cv_string = os.getenv('CASSANDRA_VERSION', None)
++        mcv_string = os.getenv('MAPPED_CASSANDRA_VERSION', None)
+     try:
+         cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
+     except:
+@@ -194,6 +203,8 @@
+ elif CASSANDRA_DIR:
+     log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+     CCM_KWARGS['install_dir'] = CASSANDRA_DIR
++elif os.getenv('SCYLLA_VERSION'):
++    CCM_KWARGS['cassandra_version'] = os.path.join(os.getenv('SCYLLA_VERSION'))
+ else:
+     log.info('Using Cassandra version: %s', CCM_VERSION)
+     CCM_KWARGS['version'] = CCM_VERSION
+@@ -207,6 +218,8 @@
+         if DSE_VERSION:
+             return ProtocolVersion.DSE_V2
+         else:
++            global ALLOW_BETA_PROTOCOL
++            ALLOW_BETA_PROTOCOL = True
+             return ProtocolVersion.V5
+     if CASSANDRA_VERSION >= Version('3.10'):
+         if DSE_VERSION:
+@@ -223,6 +236,17 @@
+         raise Exception("Running tests with an unsupported Cassandra version: {0}".format(CASSANDRA_VERSION))
+ 
+ 
++def get_scylla_default_protocol():
++    if len(CASSANDRA_VERSION.release) == 4:
++        # An enterprise, i.e. 2021.1.6
++        if CASSANDRA_VERSION > Version('2019'):
++            return 4
++        return 3
++    if CASSANDRA_VERSION >= Version('3.0'):
++        return 4
++    return 3
++
++
+ def get_supported_protocol_versions():
+     """
+     1.2 -> 1
+@@ -232,12 +256,9 @@
+     3.X -> 4, 3
+     3.10(C*) -> 5(beta),4,3
+     3.10(DSE) -> DSE_V1,4,3
+-    4.0(C*) -> 6(beta),5,4,3
++    4.0(C*) -> 5(beta),4,3
+     4.0(DSE) -> DSE_v2, DSE_V1,4,3
+ `   """
+-    if CASSANDRA_VERSION >= Version('4.0-beta5'):
+-        if not DSE_VERSION:
+-            return (3, 4, 5, 6)
+     if CASSANDRA_VERSION >= Version('4.0-a'):
+         if DSE_VERSION:
+             return (3, 4, ProtocolVersion.DSE_V1, ProtocolVersion.DSE_V2)
+@@ -297,7 +318,7 @@
+         return 2
+ 
+ 
+-default_protocol_version = get_default_protocol()
++default_protocol_version = get_scylla_default_protocol() if SCYLLA_VERSION else get_default_protocol()
+ 
+ 
+ PROTOCOL_VERSION = int(os.getenv('PROTOCOL_VERSION', default_protocol_version))
+@@ -317,6 +338,7 @@
+ notprotocolv1 = unittest.skipUnless(PROTOCOL_VERSION > 1, 'Protocol v1 not supported')
+ lessthenprotocolv4 = unittest.skipUnless(PROTOCOL_VERSION < 4, 'Protocol versions 4 or greater not supported')
+ greaterthanprotocolv3 = unittest.skipUnless(PROTOCOL_VERSION >= 4, 'Protocol versions less than 4 are not supported')
++protocolv5 = unittest.skipUnless(5 in get_supported_protocol_versions(), 'Protocol versions less than 5 are not supported')
+ protocolv6 = unittest.skipUnless(6 in get_supported_protocol_versions(), 'Protocol versions less than 6 are not supported')
+ greaterthancass20 = unittest.skipUnless(CASSANDRA_VERSION >= Version('2.1'), 'Cassandra version 2.1 or greater required')
+ greaterthancass21 = unittest.skipUnless(CASSANDRA_VERSION >= Version('2.2'), 'Cassandra version 2.2 or greater required')
+@@ -436,7 +458,7 @@
+         if [len(list(nodes)) for dc, nodes in
+                 groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
+             for node in CCM_CLUSTER.nodelist():
+-                if set(node.workloads) != set(workloads):
++                if set(getattr(node, 'workloads', [])) != set(workloads):
+                     print("node workloads don't match creating new cluster")
+                     return False
+             return True
+@@ -557,8 +579,15 @@
+ 
+                 CCM_CLUSTER.set_dse_configuration_options(dse_options)
+             else:
+-                CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
+-                CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
++                if SCYLLA_VERSION:
++                    # `experimental: True` enable all experimental features.
++                    # CDC is causing an issue (can't start cluster with multiple seeds)
++                    # Selecting only features we need for tests, i.e. anything but CDC.
++                    CCM_CLUSTER = CCMScyllaCluster(path, cluster_name, **ccm_options)
++                    CCM_CLUSTER.set_configuration_options({'experimental_features': ['lwt', 'udf'], 'start_native_transport': True})
++                else:
++                    CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
++                    CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
+                 if Version(cassandra_version) >= Version('2.2'):
+                     CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
+                     if Version(cassandra_version) >= Version('3.0'):
+@@ -571,8 +600,9 @@
+                             })
+                 common.switch_cluster(path, cluster_name)
+                 CCM_CLUSTER.set_configuration_options(configuration_options)
+-                CCM_CLUSTER.populate(nodes, ipformat=ipformat, use_single_interface=use_single_interface)
+-
++                # Since scylla CCM doesn't yet support this options, we skip it
++                # , use_single_interface=use_single_interface)
++                CCM_CLUSTER.populate(nodes, ipformat=ipformat)
+     try:
+         jvm_args = []
+ 
+@@ -581,7 +611,7 @@
+         if 'graph' in workloads:
+             jvm_args += ['-Xms1500M', '-Xmx1500M']
+         else:
+-            if PROTOCOL_VERSION >= 4:
++            if PROTOCOL_VERSION >= 4 and not SCYLLA_VERSION:
+                 jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
+         if len(workloads) > 0:
+             for node in CCM_CLUSTER.nodes.values():
+@@ -990,7 +1020,7 @@
+ 
+ 
+ class TestCluster(object):
+-    DEFAULT_PROTOCOL_VERSION = default_protocol_version
++    DEFAULT_PROTOCOL_VERSION = PROTOCOL_VERSION
+     DEFAULT_CASSANDRA_IP = CASSANDRA_IP
+     DEFAULT_ALLOW_BETA = ALLOW_BETA_PROTOCOL
