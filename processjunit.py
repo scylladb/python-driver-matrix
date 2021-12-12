@@ -11,7 +11,7 @@ class ProcessJUnit:
         self._ignore = ignoreSet
         logging.info('ignoring {}'.format(self._ignore))
         self._summary = {'testcase': 0, 'failure': 0, 'error': 0, 'skipped': 0, 'ignored_in_analysis': 0}
-        for element in tree.getiterator():
+        for element in tree.iter():
             if self._shouldIgnore(element):
                 self._summary['ignored_in_analysis'] += 1
                 continue
