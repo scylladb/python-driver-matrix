@@ -1,0 +1,153 @@
+Index: tests/integration/__init__.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+--- a/tests/integration/__init__.py	(revision c88255f202a21bbbae35f16e603b0f10f2f2cf36)
++++ b/tests/integration/__init__.py	(date 1642346507850)
+@@ -36,6 +36,7 @@
+ import six
+ import shutil
+ 
++
+ from cassandra import OperationTimedOut, ReadTimeout, ReadFailure, WriteTimeout, WriteFailure, AlreadyExists,\
+     InvalidRequest
+ from cassandra.protocol import ConfigurationException
+@@ -44,6 +45,7 @@
+ try:
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMScyllaCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+ except ImportError as e:
+@@ -161,16 +163,21 @@
+ SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
+ CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
+ 
+-# Supported Clusters: Cassandra, DDAC, DSE
++# Supported Clusters: Cassandra, DDAC, DSE, Scylla
+ DSE_VERSION = None
++SCYLLA_VERSION = os.getenv('SCYLLA_VERSION', None)
+ if os.getenv('DSE_VERSION', None):  # we are testing against DSE
+     DSE_VERSION = Version(os.getenv('DSE_VERSION', None))
+     DSE_CRED = os.getenv('DSE_CREDS', None)
+     CASSANDRA_VERSION = _get_cass_version_from_dse(DSE_VERSION.base_version)
+     CCM_VERSION = DSE_VERSION.base_version
+ else:  # we are testing against Cassandra or DDAC
+-    cv_string = os.getenv('CASSANDRA_VERSION', None)
+-    mcv_string = os.getenv('MAPPED_CASSANDRA_VERSION', None)
++    if SCYLLA_VERSION:
++        cv_string = SCYLLA_VERSION
++        mcv_string = os.getenv('MAPPED_SCYLLA_VERSION', None)
++    else:
++        cv_string = os.getenv('CASSANDRA_VERSION', None)
++        mcv_string = os.getenv('MAPPED_CASSANDRA_VERSION', None)
+     try:
+         cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
+     except:
+@@ -435,7 +442,7 @@
+         if [len(list(nodes)) for dc, nodes in
+                 groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
+             for node in CCM_CLUSTER.nodelist():
+-                if set(node.workloads) != set(workloads):
++                if set(getattr(node, 'workloads', [])) != set(workloads):
+                     print("node workloads don't match creating new cluster")
+                     return False
+             return True
+@@ -556,8 +563,12 @@
+ 
+                 CCM_CLUSTER.set_dse_configuration_options(dse_options)
+             else:
+-                CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
+-                CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
++                if SCYLLA_VERSION:
++                    CCM_CLUSTER = CCMScyllaCluster(path, cluster_name, **ccm_options)
++                    CCM_CLUSTER.set_configuration_options({'experimental': True})
++                else:
++                    CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
++                    CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
+                 if Version(cassandra_version) >= Version('2.2'):
+                     CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
+                     if Version(cassandra_version) >= Version('3.0'):
+@@ -570,18 +581,18 @@
+                             })
+                 common.switch_cluster(path, cluster_name)
+                 CCM_CLUSTER.set_configuration_options(configuration_options)
+-                CCM_CLUSTER.populate(nodes, ipformat=ipformat, use_single_interface=use_single_interface)
++                CCM_CLUSTER.populate(nodes, ipformat=ipformat)
+ 
+     try:
+         jvm_args = []
+ 
+         # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
+ 
+-        if 'graph' in workloads:
+-            jvm_args += ['-Xms1500M', '-Xmx1500M']
+-        else:
+-            if PROTOCOL_VERSION >= 4:
+-                jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
++        # if 'graph' in workloads:
++        #     jvm_args += ['-Xms1500M', '-Xmx1500M']
++        # else:
++        #     if PROTOCOL_VERSION >= 4:
++        #         jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
+         if len(workloads) > 0:
+             for node in CCM_CLUSTER.nodes.values():
+                 node.set_workloads(workloads)
+Index: test-requirements.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test-requirements.txt b/test-requirements.txt
+--- a/test-requirements.txt	(revision c88255f202a21bbbae35f16e603b0f10f2f2cf36)
++++ b/test-requirements.txt	(date 1642346350425)
+@@ -2,7 +2,7 @@
+ scales
+ nose
+ mock>1.1
+-ccm>=2.1.2
++#ccm>=2.1.2
+ unittest2
+ pytz
+ sure
+Index: tests/integration/standard/test_prepared_statements.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+--- a/tests/integration/standard/test_prepared_statements.py	(revision c88255f202a21bbbae35f16e603b0f10f2f2cf36)
++++ b/tests/integration/standard/test_prepared_statements.py	(date 1642346350425)
+@@ -168,7 +168,7 @@
+     def _run_too_many_bind_values(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+          # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
+Index: tests/integration/standard/test_authentication_misconfiguration.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
+--- a/tests/integration/standard/test_authentication_misconfiguration.py	(revision c88255f202a21bbbae35f16e603b0f10f2f2cf36)
++++ b/tests/integration/standard/test_authentication_misconfiguration.py	(date 1642346350425)
+@@ -19,6 +19,12 @@
+ 
+ class MisconfiguredAuthenticationTests(unittest.TestCase):
+     """ One node (not the contact point) has password auth. The rest of the nodes have no auth """
++    # TODO: 	Fix ccm to apply following options to scylla.yaml
++    # 	node3.set_configuration_options(values={
++    # 	'authenticator': 'PasswordAuthenticator',
++    # 	'authorizer': 'CassandraAuthorizer',
++    # 	})
++    # To make it working for scylla
+     @classmethod
+     def setUpClass(cls):
+         if not USE_CASS_EXTERNAL:

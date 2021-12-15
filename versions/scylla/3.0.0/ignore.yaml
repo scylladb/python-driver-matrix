@@ -1,4 +1,5 @@
 tests:
+  ignore:
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_index
     - tests.integration.standard.test_metadata.IndexMapTests.test_index_follows_alter
     - tests.integration.standard.test_metadata.IndexMapTests.test_index_updates
@@ -10,3 +11,7 @@ tests:
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_batch_statements
     - tests.integration.standard.test_query.SerialConsistencyTests.test_conditional_update_with_prepared_statements
+  flaky:
+v4_tests:
+  ignore:
+  flaky:

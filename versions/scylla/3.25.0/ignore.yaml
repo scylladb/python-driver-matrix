@@ -4,7 +4,6 @@ tests:
     - tests.integration.standard.test_cluster.ClusterTests.test_compact_option
     - tests.integration.standard.test_cluster.ClusterTests.test_invalid_protocol_negotation
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
-    - tests.integration.standard.test_custom_protocol_handler.CustomProtocolHandlerTest.test_protocol_divergence_v5_fail_by_continuous_paging
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_collection_indexes
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_compression_disabled
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_indexes
@@ -16,22 +15,24 @@ tests:
     - tests.integration.standard.test_metadata.DynamicCompositeTypeTest.test_dct_alias
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_stmt
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_string
-    - tests.integration.standard.test_shard_aware.TestShardAwareIntegration.test_closing_connections
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
+    - tests.integration.standard.test_prepared_statements.PreparedStatementTests.test_imprecise_bind_values_dicts
+    - tests.integration.standard.test_shard_aware.TestShardAwareIntegration.test_closing_connections
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
+  flaky:
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
-  flaky:
 v4_tests:
   ignore:
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_custom_payload
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace_and_custom_payload
     - tests.integration.standard.test_cluster.ClusterTests.test_compact_option
     - tests.integration.standard.test_cluster.ClusterTests.test_invalid_protocol_negotation
-    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
-    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
-    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
     - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_basic
     - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_batching
     - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_prepared
-    - tests.integration.standard.test_custom_protocol_handler.CustomProtocolHandlerTest.test_protocol_divergence_v5_fail_by_continuous_paging
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_collection_indexes
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_compression_disabled
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_indexes
@@ -59,4 +60,8 @@ v4_tests:
     - tests.integration.standard.test_metadata.AggregateMetadata.test_init_cond
     - tests.integration.standard.test_metadata.AggregateMetadata.test_return_type_meta
     - tests.integration.standard.test_metadata.AggregateMetadata.test_same_name_diff_types
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
+    - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
   flaky:
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
