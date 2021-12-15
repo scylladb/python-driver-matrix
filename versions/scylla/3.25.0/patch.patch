@@ -1,0 +1,352 @@
+Index: tests/integration/standard/test_client_warnings.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_client_warnings.py b/tests/integration/standard/test_client_warnings.py
+--- a/tests/integration/standard/test_client_warnings.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_client_warnings.py	(date 1641413084353)
+@@ -29,7 +29,6 @@
+ 
+ # Failing with scylla because there is no warning message when changing the value of 'batch_size_warn_threshold_in_kb'
+ # config")
+-@unittest.expectedFailure
+ class ClientWarningTests(unittest.TestCase):
+ 
+     @classmethod
+Index: tests/integration/standard/test_query.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_query.py b/tests/integration/standard/test_query.py
+--- a/tests/integration/standard/test_query.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_query.py	(date 1641412525901)
+@@ -957,7 +957,6 @@
+         self.assertTrue(received_timeout)
+ 
+     # Failed on Scylla because error `SERIAL/LOCAL_SERIAL consistency may only be requested for one partition at a time`
+-    @unittest.expectedFailure
+     def test_was_applied_batch_stmt(self):
+         """
+         Test to ensure `:attr:cassandra.cluster.ResultSet.was_applied` works as expected
+@@ -1044,7 +1043,6 @@
+             results.was_applied
+ 
+     # Skipping until PYTHON-943 is resolved
+-    @unittest.expectedFailure
+     def test_was_applied_batch_string(self):
+         batch_statement = BatchStatement(BatchType.LOGGED)
+         batch_statement.add_all(["INSERT INTO test3rf.lwt_clustering (k, c, v) VALUES (0, 0, 10);",
+@@ -1468,7 +1466,6 @@
+ 
+ @greaterthanorequalcass40
+ class SimpleWithKeyspaceTests(QueryKeyspaceTests, unittest.TestCase):
+-    @unittest.expectedFailure
+     def test_lower_protocol(self):
+         cluster = TestCluster(protocol_version=ProtocolVersion.V4)
+         session = cluster.connect(self.ks_name)
+Index: tests/integration/standard/test_metadata.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
+--- a/tests/integration/standard/test_metadata.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_metadata.py	(date 1641412525901)
+@@ -471,7 +471,6 @@
+         tablemeta = self.get_table_metadata()
+         self.check_create_statement(tablemeta, create_statement)
+ 
+-    @unittest.expectedFailure
+     def test_indexes(self):
+         create_statement = self.make_create_statement(["a"], ["b", "c"], ["d", "e", "f"])
+         create_statement += " WITH CLUSTERING ORDER BY (b ASC, c ASC)"
+@@ -497,7 +496,6 @@
+         self.assertIn('CREATE INDEX e_index', statement)
+ 
+     @greaterthancass21
+-    @unittest.expectedFailure
+     def test_collection_indexes(self):
+ 
+         self.session.execute("CREATE TABLE %s.%s (a int PRIMARY KEY, b map<text, text>)"
+@@ -527,7 +525,6 @@
+             tablemeta = self.get_table_metadata()
+             self.assertIn('(full(b))', tablemeta.export_as_string())
+ 
+-    @unittest.expectedFailure
+     def test_compression_disabled(self):
+         create_statement = self.make_create_statement(["a"], ["b"], ["c"])
+         create_statement += " WITH compression = {}"
+@@ -562,7 +559,6 @@
+             self.assertNotIn("min_threshold", cql)
+             self.assertNotIn("max_threshold", cql)
+ 
+-    @unittest.expectedFailure
+     def test_refresh_schema_metadata(self):
+         """
+         test for synchronously refreshing all cluster metadata
+@@ -835,7 +831,6 @@
+             self.assertEqual(cluster.metadata.keyspaces[self.keyspace_name].user_types, {})
+             cluster.shutdown()
+ 
+-    @unittest.expectedFailure
+     def test_refresh_user_function_metadata(self):
+         """
+         test for synchronously refreshing UDF metadata in keyspace
+@@ -872,7 +867,6 @@
+ 
+         cluster2.shutdown()
+ 
+-    @unittest.expectedFailure
+     def test_refresh_user_aggregate_metadata(self):
+         """
+         test for synchronously refreshing UDA metadata in keyspace
+@@ -916,7 +910,6 @@
+         cluster2.shutdown()
+ 
+     @greaterthanorequalcass30
+-    @unittest.expectedFailure
+     def test_multiple_indices(self):
+         """
+         test multiple indices on the same column.
+@@ -1169,7 +1162,6 @@
+         cluster.shutdown()
+ 
+     @greaterthancass21
+-    @unittest.expectedFailure
+     def test_case_sensitivity(self):
+         """
+         Test that names that need to be escaped in CREATE statements are
+@@ -1239,7 +1231,6 @@
+         cluster.shutdown()
+ 
+     @local
+-    @unittest.expectedFailure
+     def test_replicas(self):
+         """
+         Ensure cluster.metadata.get_replicas return correctly when not attached to keyspace
+@@ -1506,7 +1497,6 @@
+             super(FunctionTest.VerifiedAggregate, self).__init__(test_case, Aggregate, test_case.keyspace_aggregate_meta, **kwargs)
+ 
+ 
+-@unittest.expectedFailure
+ class FunctionMetadata(FunctionTest):
+ 
+     def make_function_kwargs(self, called_on_null=True):
+@@ -1705,7 +1695,6 @@
+                 'return_type': "does not matter for creation",
+                 'deterministic': False}
+ 
+-    @unittest.expectedFailure
+     def test_return_type_meta(self):
+         """
+         Test to verify to that the return type of a an aggregate is honored in the metadata
+@@ -1723,7 +1712,6 @@
+         with self.VerifiedAggregate(self, **self.make_aggregate_kwargs('sum_int', 'int', init_cond='1')) as va:
+             self.assertEqual(self.keyspace_aggregate_meta[va.signature].return_type, 'int')
+ 
+-    @unittest.expectedFailure
+     def test_init_cond(self):
+         """
+         Test to verify that various initial conditions are correctly surfaced in various aggregate functions
+@@ -1774,7 +1762,6 @@
+                 self.assertDictContainsSubset(init_not_updated, map_res)
+         c.shutdown()
+ 
+-    @unittest.expectedFailure
+     def test_aggregates_after_functions(self):
+         """
+         Test to verify that aggregates are listed after function in metadata
+@@ -1797,7 +1784,6 @@
+             self.assertNotIn(-1, (aggregate_idx, func_idx), "AGGREGATE or FUNCTION not found in keyspace_cql: " + keyspace_cql)
+             self.assertGreater(aggregate_idx, func_idx)
+ 
+-    @unittest.expectedFailure
+     def test_same_name_diff_types(self):
+         """
+         Test to verify to that aggregates with different signatures are differentiated in metadata
+@@ -1820,7 +1806,6 @@
+                 self.assertEqual(len(aggregates), 2)
+                 self.assertNotEqual(aggregates[0].argument_types, aggregates[1].argument_types)
+ 
+-    @unittest.expectedFailure
+     def test_aggregates_follow_keyspace_alter(self):
+         """
+         Test to verify to that aggregates maintain equality after a keyspace is altered
+@@ -1845,7 +1830,6 @@
+             finally:
+                 self.session.execute('ALTER KEYSPACE %s WITH durable_writes = true' % self.keyspace_name)
+ 
+-    @unittest.expectedFailure
+     def test_cql_optional_params(self):
+         """
+         Test to verify that the initial_cond and final_func parameters are correctly honored
+@@ -1980,7 +1964,6 @@
+             self.assertIn("/*\nWarning:", m.export_as_string())
+ 
+     @greaterthancass21
+-    @unittest.expectedFailure
+     def test_bad_user_function(self):
+         self.session.execute("""CREATE FUNCTION IF NOT EXISTS %s (key int, val int)
+                                 RETURNS NULL ON NULL INPUT
+@@ -1999,7 +1982,6 @@
+                 self.assertIn("/*\nWarning:", m.export_as_string())
+ 
+     @greaterthancass21
+-    @unittest.expectedFailure
+     def test_bad_user_aggregate(self):
+         self.session.execute("""CREATE FUNCTION IF NOT EXISTS sum_int (key int, val int)
+                                 RETURNS NULL ON NULL INPUT
+@@ -2020,7 +2002,6 @@
+ 
+ class DynamicCompositeTypeTest(BasicSharedKeyspaceUnitTestCase):
+ 
+-    @unittest.expectedFailure
+     def test_dct_alias(self):
+         """
+         Tests to make sure DCT's have correct string formatting
+Index: tests/integration/standard/test_cluster.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_cluster.py b/tests/integration/standard/test_cluster.py
+--- a/tests/integration/standard/test_cluster.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_cluster.py	(date 1641412525901)
+@@ -289,7 +289,6 @@
+         cluster.shutdown()
+ 
+     # "Failing with scylla because there is option to create a cluster with 'lower bound' protocol
+-    @unittest.expectedFailure
+     def test_invalid_protocol_negotation(self):
+         """
+         Test for protocol negotiation when explicit versions are set
+@@ -1200,7 +1199,6 @@
+     @greaterthanorequalcass30
+     @lessthanorequalcass40
+     # The scylla failed because 'Unknown identifier column1'
+-    @unittest.expectedFailure
+     def test_compact_option(self):
+         """
+         Test the driver can connect with the no_compact option and the results
+@@ -1565,7 +1563,6 @@
+             self.assertIn("Cluster.set_meta_refresh_enabled is deprecated and will be removed in 4.0.",
+                           str(w[0].message))
+ 
+-    @unittest.expectedFailure
+     def test_deprecation_warning_default_consistency_level(self):
+         """
+         Tests the deprecation warning has been added when enabling
+Index: tests/integration/standard/test_custom_payload.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_custom_payload.py b/tests/integration/standard/test_custom_payload.py
+--- a/tests/integration/standard/test_custom_payload.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_custom_payload.py	(date 1641412525901)
+@@ -46,7 +46,6 @@
+         self.cluster.shutdown()
+ 
+     # Scylla error: 'truncated frame: expected 65540 bytes, length is 64'
+-    @unittest.expectedFailure
+     def test_custom_query_basic(self):
+         """
+         Test to validate that custom payloads work with simple queries
+@@ -70,7 +69,6 @@
+         self.validate_various_custom_payloads(statement=statement)
+ 
+     # Scylla error: 'Invalid query kind in BATCH messages. Must be 0 or 1 but got 4'"
+-    @unittest.expectedFailure
+     def test_custom_query_batching(self):
+         """
+         Test to validate that custom payloads work with batch queries
+@@ -97,7 +95,6 @@
+ 
+     # Scylla error: 'Got different query ID in server response (b'\x00') than we had before
+     # (b'\x84P\xd0K0\xe2=\x11\xba\x02\x16W\xfatN\xf1')'")
+-    @unittest.expectedFailure
+     def test_custom_query_prepared(self):
+         """
+         Test to validate that custom payloads work with prepared queries
+Index: tests/integration/standard/test_types.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_types.py b/tests/integration/standard/test_types.py
+--- a/tests/integration/standard/test_types.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_types.py	(date 1641412525901)
+@@ -734,7 +734,6 @@
+         s.execute(u"SELECT * FROM system.local WHERE key = 'ef\u2052ef'")
+         s.execute(u"SELECT * FROM system.local WHERE key = %s", (u"fe\u2051fe",))
+ 
+-    @unittest.expectedFailure
+     def test_can_read_composite_type(self):
+         """
+         Test to ensure that CompositeTypes can be used in a query
+Index: tests/integration/standard/test_authentication_misconfiguration.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
+--- a/tests/integration/standard/test_authentication_misconfiguration.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_authentication_misconfiguration.py	(date 1641412525901)
+@@ -38,7 +38,6 @@
+ 
+             cls.ccm_cluster = ccm_cluster
+ 
+-    @unittest.expectedFailure
+     def test_connect_no_auth_provider(self):
+         cluster = TestCluster()
+         cluster.connect()
+Index: tests/integration/standard/test_shard_aware.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_shard_aware.py b/tests/integration/standard/test_shard_aware.py
+--- a/tests/integration/standard/test_shard_aware.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_shard_aware.py	(date 1641412525901)
+@@ -185,7 +185,6 @@
+         time.sleep(10)
+         self.query_data(self.session)
+ 
+-    @unittest.expectedFailure
+     def test_blocking_connections(self):
+         """
+         Verify that reconnection is working as expected, when connection are being blocked.
+Index: tests/integration/standard/test_custom_protocol_handler.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/tests/integration/standard/test_custom_protocol_handler.py b/tests/integration/standard/test_custom_protocol_handler.py
+--- a/tests/integration/standard/test_custom_protocol_handler.py	(revision a34e4db2dffc5667c24a0c91b75516cbeaa90a74)
++++ b/tests/integration/standard/test_custom_protocol_handler.py	(date 1641412525905)
+@@ -124,7 +124,6 @@
+         self.assertEqual(len(CustomResultMessageTracked.checked_rev_row_set), len(PRIMITIVE_DATATYPES)-1)
+         cluster.shutdown()
+ 
+-    @unittest.expectedFailure
+     @requirecassandra
+     @greaterthanorequalcass40
+     def test_protocol_divergence_v5_fail_by_continuous_paging(self):
+@@ -172,7 +171,6 @@
+         self._protocol_divergence_fail_by_flag_uses_int(ProtocolVersion.V4, uses_int_query_flag=False,
+                                                         int_flag=True)
+ 
+-    @unittest.expectedFailure
+     @requirecassandra
+     @greaterthanorequalcass40
+     def test_protocol_v5_uses_flag_int(self):
+@@ -200,7 +198,6 @@
+         self._protocol_divergence_fail_by_flag_uses_int(ProtocolVersion.DSE_V1, uses_int_query_flag=True,
+                                                         int_flag=True)
+ 
+-    @unittest.expectedFailure
+     @requirecassandra
+     @greaterthanorequalcass40
+     def test_protocol_divergence_v5_fail_by_flag_uses_int(self):
