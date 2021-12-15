@@ -47,9 +47,9 @@ Uploading docker images
 
 when doing changes to requirements.txt, or any other change to docker image, it can be uploaded like this::
 
-    export DTEST_DOCKER_IMAGE=scylladb/scylla-dtest:python2.7-$(date +'%Y%m%d')
-    docker build ./scripts -t ${DTEST_DOCKER_IMAGE}
-    docker push ${DTEST_DOCKER_IMAGE}
-    echo "${DTEST_DOCKER_IMAGE}" > scripts/image
+    export MATRIX_DOCKER_IMAGE=scylladb/scylla-python-driver-matrix:python3.8-$(date +'%Y%m%d')
+    docker build ./scripts -t ${MATRIX_DOCKER_IMAGE}
+    docker push ${MATRIX_DOCKER_IMAGE}
+    echo "${MATRIX_DOCKER_IMAGE}" > scripts/image
 
 **Note:** you'll need permissions on the scylladb dockerhub organization for uploading images
