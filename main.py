@@ -1,6 +1,8 @@
 import os
 import logging
 import argparse
+import subprocess
+from typing import List
 
 import run
 
@@ -24,8 +26,29 @@ def main(python_driver_git, scylla_install_dir, driver_type, tests, versions, pr
     quit(status)
 
 
+def extract_n_latest_repo_tags(repo_directory: str, latest_tags_size: int = 2, is_python_driver: bool = False
+                               ) -> List[str]:
+    filter_version = f"| grep {'' if is_python_driver else '-v '}scylla"
+    commands = [
+        f"cd {repo_directory}",
+        f"git tag --sort=-creatordate {filter_version}",
+    ]
+    major_tags = set()
+    tags = []
+    for repo_tag in subprocess.check_output("\n".join(commands), shell=True).decode().splitlines():
+        if "." in repo_tag and not ("-" in repo_tag and not repo_tag.endswith("-scylla")):
+            major_tag = tuple(repo_tag.split(".", maxsplit=2)[:2])
+            if major_tag not in major_tags:
+                major_tags.add(major_tag)
+                tags.append(repo_tag)
+            if len(tags) == latest_tags_size:
+                break
+    else:
+        raise ValueError(f"The last {latest_tags_size} tags in {repo_directory} couldn't be extracted")
+    return tags
+
+
 if __name__ == '__main__':
-    versions = ['3.0.0', '3.2.0', '3.4.0', '3.5.0', '3.8.0', '3.9.0']
     protocols = ['3', '4']
     parser = argparse.ArgumentParser()
     parser.add_argument('python_driver_git', help='folder with git repository of python-driver')
@@ -34,16 +57,25 @@ if __name__ == '__main__':
                         nargs='?', default='')
     parser.add_argument('--driver-type', help='Type of python-driver ("scylla", "cassandra" or "datastax")',
                         dest='driver_type')
-    parser.add_argument('--versions', default=versions,
-                        help='python-driver versions to test, default={}'.format(','.join(versions)))
+    parser.add_argument('--versions', default='2',
+                        help="python-driver versions to test, default=2 - take the two latest driver's tags")
     parser.add_argument('--tests', default='tests.integration.standard',
                         help='tests to pass to nosetests tool, default=tests.integration.standard')
     parser.add_argument('--protocols', default=protocols,
                         help='cqlsh native protocol, default={}'.format(','.join(protocols)))
-    parser.add_argument('--scylla-version', help="relocatable scylla version to use", default=os.environ.get('SCYLLA_VERSION', None))
+    parser.add_argument('--scylla-version', help="relocatable scylla version to use",
+                        default=os.environ.get('SCYLLA_VERSION', None))
+
     arguments = parser.parse_args()
-    if not isinstance(arguments.versions, list):
-        versions = arguments.versions.split(',')
+    if (tags_size := arguments.versions).isdigit():
+        versions = extract_n_latest_repo_tags(
+            repo_directory=arguments.python_driver_git,
+            latest_tags_size=int(tags_size),
+            is_python_driver=arguments.driver_type == "scylla"
+        )
+    else:
+        versions = arguments.versions.split(",") if isinstance(arguments.versions, str) else arguments.versions
     if not isinstance(arguments.protocols, list):
         protocols = arguments.protocols.split(',')
-    main(arguments.python_driver_git, arguments.scylla_install_dir, arguments.driver_type, arguments.tests, versions, protocols, arguments.scylla_version)
+    main(arguments.python_driver_git, arguments.scylla_install_dir, arguments.driver_type, arguments.tests, versions,
+         protocols, arguments.scylla_version)

@@ -1,7 +1,8 @@
 import logging
 import os
-import shutil
 import subprocess
+from functools import cached_property
+
 import yaml
 import processjunit
 import tempfile
@@ -12,7 +13,8 @@ class Run:
 
     def __init__(self, python_driver_git, python_driver_type, scylla_install_dir, tag, protocol, tests,
                  scylla_version=None):
-        self._tag = tag
+        self.tag = tag.split("-", maxsplit=1)[0]
+        self._full_tag_name = tag
         self._python_driver_git = python_driver_git
         self._python_driver_type = python_driver_type
         self._scylla_version = scylla_version
@@ -29,7 +31,7 @@ class Run:
         return self._junit.summary
 
     def __repr__(self):
-        details = dict(version=self._tag, protocol=self._protocol, type=self._python_driver_type)
+        details = dict(version=self.tag, protocol=self._protocol, type=self._python_driver_type)
         details.update(self._junit.summary)
         return '({type}){version}: v{protocol}: testcases: {testcase},' \
             ' failures: {failure}, errors: {error}, skipped: {skipped},' \
@@ -39,7 +41,7 @@ class Run:
     def version_folder(self):
         if self._version_folder is not None:
             return self._version_folder
-        self._version_folder = self.__version_folder(self._python_driver_type, self._tag)
+        self._version_folder = self.__version_folder(self._python_driver_type, self.tag)
         return self._version_folder
 
     @staticmethod
@@ -71,14 +73,14 @@ class Run:
 
     def _setup_out_dir(self):
         here = os.path.dirname(__file__)
-        xunit_dir = os.path.join(here, 'xunit', self._tag)
+        xunit_dir = os.path.join(here, 'xunit', self.tag)
         if not os.path.exists(xunit_dir):
             os.makedirs(xunit_dir)
         return xunit_dir
 
     def _get_xunit_file(self, xunit_dir):
         file_path = os.path.join(xunit_dir, 'nosetests.{}.v{}.{}.xml'.format(
-            self._python_driver_type, self._protocol, self._tag))
+            self._python_driver_type, self._protocol, self.tag))
         if os.path.exists(file_path):
             os.unlink(file_path)
         return file_path
@@ -90,26 +92,27 @@ class Run:
         ignore_tests = []
         ignore_file_path = self._ignoreFile()
         if not os.path.exists(ignore_file_path):
-            logging.info('Cannot find ignore file for version {}'.format(self._tag))
+            logging.info('Cannot find ignore file for version {}'.format(self.tag))
             return set()
         with open(ignore_file_path) as f:
             content = yaml.safe_load(f)
             if 'tests' in content and content['tests']:
                 ignore_tests.extend(content['tests'])
             else:
-                logging.info('No "tests" element or it is empty in ignore.yaml for version {}'.format(self._tag))
+                logging.info('No "tests" element or it is empty in ignore.yaml for version {}'.format(self.tag))
 
             if self._protocol == '4':
                 if 'tests' in content and content['v4_tests']:
                     ignore_tests.extend(content['v4_tests'])
                 else:
-                    logging.info('No "v4_tests" element or it is empty in ignore.yaml for version {}'.format(self._tag))
+                    logging.info('No "v4_tests" element or it is empty in ignore.yaml for version {}'.format(self.tag))
         return set(ignore_tests)
 
-    def _environment(self):
+    @cached_property
+    def environment(self):
         result = {}
         result.update(os.environ)
-        result['PROTOCOL_VERSION'] = self._protocol
+        result['PROTOCOL_VERSION'] = str(self._protocol)
         if self._scylla_version:
             result['SCYLLA_VERSION'] = self._scylla_version
         else:
@@ -120,23 +123,29 @@ class Run:
         try:
             patch_file = os.path.join(self.version_folder, 'patch')
             if not os.path.exists(patch_file):
-                logging.info('Cannot find patch for version {}'.format(self._tag))
+                logging.info('Cannot find patch for version {}'.format(self.tag))
                 return True
             command = "patch -p1 -i {}".format(patch_file)
             subprocess.check_call(command, shell=True)
             return True
         except Exception as exc:
-            logging.error("Failed to apply patch to version {}, with: {}".format(self._tag, str(exc)))
+            logging.error("Failed to apply patch to version {}, with: {}".format(self.tag, str(exc)))
             return False
 
     def _get_venv_path(self):
         if self._venv_path is not None:
             return self._venv_path
-        self._venv_path = os.path.join(tempfile.gettempdir(), '.venv', self._python_driver_type, self._tag)
+        self._venv_path = os.path.join(tempfile.gettempdir(), '.venv', self._python_driver_type, self.tag)
         return self._venv_path
 
+    def _run_command_in_shell(self, cmd: str):
+        logging.debug("Execute the cmd '%s'" % cmd)
+        status_code = subprocess.call(cmd, shell=True, executable="/bin/bash", env=self.environment,
+                                      cwd=self._python_driver_git)
+        assert status_code == 0
+
     def _create_venv(self):
-        subprocess.call(f"python3 -m venv {self._get_venv_path()}".split(), env=self._environment())
+        subprocess.call(f"python3 -m venv {self._get_venv_path()}".split(), env=self.environment)
 
     def _activate_venv_cmd(self):
         return f"source {self._get_venv_path()}/bin/activate"
@@ -149,33 +158,25 @@ class Run:
                     continue
                 subprocess.call(f"{self._activate_venv_cmd()} ; pip install --user --force-reinstall -r {requirement_file}",
                                 shell=True,
-                                env=self._environment())
+                                env=self.environment)
             return True
         except Exception as exc:
-            logging.error("Failed to install python requirements for version {}, with: {}".format(self._tag, str(exc)))
+            logging.error("Failed to install python requirements for version {}, with: {}".format(self.tag, str(exc)))
             return False
 
     def _checkout_branch(self):
         try:
-            subprocess.check_call('git checkout .', shell=True)
-            if self._python_driver_type == 'scylla':
-                subprocess.check_call('git checkout {}-scylla'.format(self._tag), shell=True)
-            else:
-                subprocess.check_call('git checkout {}'.format(self._tag), shell=True)
+            self._run_command_in_shell('git checkout .')
+            logging.info("git checkout to '%s' tag branch" % self._full_tag_name)
+            self._run_command_in_shell(f'git checkout {self._full_tag_name}')
             return True
         except Exception as exc:
-            logging.error("Failed to branch for version {}, with: {}".format(self._tag, str(exc)))
+            logging.error("Failed to branch for version {}, with: {}".format(self.tag, str(exc)))
             return False
 
     def _run(self):
         os.chdir(self._python_driver_git)
-        if not self._checkout_branch():
-            self._publish_fake_result()
-            return
-        if not self._apply_patch():
-            self._publish_fake_result()
-            return
-        if not self._install_python_requirements():
+        if not (self._checkout_branch() and self._apply_patch() and self._install_python_requirements()):
             self._publish_fake_result()
             return
         exclude_str = ' '
@@ -184,14 +185,14 @@ class Run:
             exclude_str += '--exclude %s ' % ignore_element
         cmd = 'nosetests --with-xunit --xunit-file {} -s {} {}'.format(self._xunit_file, self._tests, exclude_str)
         logging.info(cmd)
-        subprocess.call(cmd.split(), env=self._environment())
+        subprocess.call(cmd.split(), env=self.environment)
         self._junit = self._process_output()
 
     def _process_output(self):
         junit = processjunit.ProcessJUnit(self._xunit_file, self._ignoreSet())
         content = open(self._xunit_file).read()
         open(self._xunit_file, 'w').write(content.replace('classname="', 'classname="version_{}_v{}_'.format(
-            self._tag, self._protocol)))
+            self.tag, self._protocol)))
         return junit
 
     def _publish_fake_result(self):
