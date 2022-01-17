@@ -20,6 +20,7 @@ tests:
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
   flaky:
 v4_tests:
   ignore:
@@ -59,4 +60,8 @@ v4_tests:
     - tests.integration.standard.test_metadata.AggregateMetadata.test_init_cond
     - tests.integration.standard.test_metadata.AggregateMetadata.test_return_type_meta
     - tests.integration.standard.test_metadata.AggregateMetadata.test_same_name_diff_types
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_trace_and_custom_payload
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
+    - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_custom_payload
   flaky:
