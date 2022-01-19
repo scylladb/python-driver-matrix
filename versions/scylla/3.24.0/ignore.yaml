@@ -65,3 +65,4 @@ v4_tests:
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_custom_payload
   flaky:
+    - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
