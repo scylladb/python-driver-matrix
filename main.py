@@ -71,7 +71,7 @@ def get_arguments() -> argparse.Namespace:
                              "The value can be number or str with comma (example: '3.24.0,3.25.0').\n"
                              "default=2 - take the two latest driver's tags.")
     parser.add_argument('--tests', default='tests.integration.standard',
-                        help='tests to pass to nosetests tool, default=tests.integration.standard')
+                        help='tests to pass to pytest tool, default=tests.integration.standard')
     parser.add_argument('--protocols', default=default_protocols,
                         help='cqlsh native protocol, default={}'.format(','.join(default_protocols)))
     parser.add_argument('--scylla-version', help="relocatable scylla version to use",
