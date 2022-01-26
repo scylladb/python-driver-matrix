@@ -27,7 +27,7 @@ class Run:
         self._venv_path = self._python_driver_git / "venv" / self._python_driver_type / self.driver_version
         self._collect_only = collect_only
 
-    @property
+    @cached_property
     def version_folder(self) -> Path:
         version_pattern = re.compile(r"(\d+.)+\d+$")
         target_version_folder = Path(os.path.dirname(__file__)) / "versions" / self._python_driver_type
