@@ -17,6 +17,8 @@ tests:
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_stmt
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
   flaky:
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
+    - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
 v4_tests:
   ignore:
     - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_basic
@@ -44,7 +46,6 @@ v4_tests:
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_stmt
     - tests.integration.standard.test_metadata.FunctionMetadata.test_function_same_name_diff_types
-    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_replicas
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_function
@@ -57,3 +58,5 @@ v4_tests:
     - tests.integration.standard.test_metadata.AggregateMetadata.test_same_name_diff_types
     - tests.integration.standard.test_metadata.AggregateMetadata.test_aggregates_follow_keyspace_alter
   flaky:
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
+    - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
