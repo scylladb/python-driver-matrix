@@ -56,8 +56,8 @@ class ProcessJUnit:
                     category_type += "s"
             else:
                 category_type = "passed"
-                if is_ignore_test and is_flaky_test:
-                    # The test passed, and it appears in the YAML file as a test that needs to skip - so need to
+                if is_ignore_test or is_flaky_test:
+                    # The test passed, and it appears in the YAML file as a test that needs to ignore - so need to
                     # remove it from the YAML file
                     category_type = "xpassed"
 
@@ -133,4 +133,4 @@ class ProcessJUnit:
     def is_failed(self) -> bool:
         return not (self.summary["tests"] and self.summary["tests"] ==
                     self.summary["passed"] + self.summary["skipped"] + self.summary["ignored_in_analysis"] +
-                    self.summary["flaky"])
+                    self.summary["flaky"] + self.summary["xpassed"])
