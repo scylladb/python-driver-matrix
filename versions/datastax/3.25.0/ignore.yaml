@@ -16,6 +16,7 @@ tests:
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_stmt
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
   flaky:
+    - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
     - tests.integration.standard.test_cluster.ClusterTests.test_replicas_are_queried
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
