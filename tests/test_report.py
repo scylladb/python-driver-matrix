@@ -106,13 +106,13 @@ class TestReportMechanism:
             f"{TEST_FILE_NAME}.TestWithMark.test_fail_but_marked_as_expected_failure"}
 
     def test_passed(self, report):
-        pass_flaky_test_name = f"{TEST_FILE_NAME}.TestWithMark.test_flaky_pass"
-        assert pass_flaky_test_name in IGNORE_SET["flaky"]
-        assert report.summary_full_details["passed"] == \
-               {f"{TEST_FILE_NAME}.TestWithMark.test_pass", pass_flaky_test_name}
+        assert report.summary_full_details["passed"] == {f"{TEST_FILE_NAME}.TestWithMark.test_pass"}
 
     def test_xpassed(self, report):
+        pass_flaky_test_name = f"{TEST_FILE_NAME}.TestWithMark.test_flaky_pass"
+        assert pass_flaky_test_name in IGNORE_SET["flaky"]
         assert report.summary_full_details["xpassed"] == {
+            pass_flaky_test_name,
             f"{TEST_FILE_NAME}.TestWithMark.test_pass_but_marked_as_expected_failure"}
 
     def test_skipped(self, report):
@@ -125,3 +125,6 @@ class TestReportMechanism:
 
     def test_save_new_report_after_analysis(self, report):
         report.save_after_analysis(driver_version="3.25.0", protocol=3, python_driver_type="scylla")
+
+    def test_is_report_failed(self, report):
+        assert report.is_failed
