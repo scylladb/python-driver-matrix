@@ -35,11 +35,13 @@ def main(arguments: argparse.Namespace):
     quit(status)
 
 
-def extract_n_latest_repo_tags(repo_directory: str, latest_tags_size: int = 2, is_python_driver: bool = False
+def extract_n_latest_repo_tags(repo_directory: str, latest_tags_size: int = 2, is_scylla_driver: bool = False
                                ) -> List[str]:
-    filter_version = f"| grep {'' if is_python_driver else '-v '}scylla"
+    filter_version = f"| grep {'' if is_scylla_driver else '-v '}scylla"
     commands = [
         f"cd {repo_directory}",
+        "git checkout .",
+        "git fetch -p --all",
         f"git tag --sort=-creatordate {filter_version}",
     ]
     major_tags = set()
@@ -85,7 +87,7 @@ def get_arguments() -> argparse.Namespace:
         arguments.versions = extract_n_latest_repo_tags(
             repo_directory=arguments.python_driver_git,
             latest_tags_size=int(driver_versions),
-            is_python_driver=arguments.driver_type == "scylla"
+            is_scylla_driver=arguments.driver_type == "scylla"
         )
     else:
         arguments.versions = driver_versions.split(",")
