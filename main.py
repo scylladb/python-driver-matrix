@@ -1,37 +1,56 @@
+import sys
 import argparse
 import logging
 import os
 import subprocess
 from typing import List
+import traceback
 
 from run import Run
+from email_sender import create_report, get_driver_origin_remote, send_mail
 
 logging.basicConfig(level=logging.INFO)
 
 
 def main(arguments: argparse.Namespace):
     status = 0
+    results = dict()
+
     for driver_version in arguments.versions:
         for protocol in arguments.protocols:
-            logging.info("=== PYTHON DRIVER VERSION %s, PROTOCOL v%s ===", driver_version, protocol)
-            result = Run(python_driver_git=arguments.python_driver_git,
-                         python_driver_type=arguments.driver_type,
-                         scylla_install_dir=arguments.scylla_install_dir,
-                         tag=driver_version,
-                         protocol=protocol,
-                         tests=arguments.tests,
-                         scylla_version=arguments.scylla_version,
-                         collect_only=arguments.collect_only).run()
+            logging.info('=== PYTHON DRIVER VERSION %s, PROTOCOL v%s ===', driver_version, protocol)
+            try:
+                result = Run(python_driver_git=arguments.python_driver_git,
+                             python_driver_type=arguments.driver_type,
+                             scylla_install_dir=arguments.scylla_install_dir,
+                             tag=driver_version,
+                             protocol=protocol,
+                             tests=arguments.tests,
+                             scylla_version=arguments.scylla_version,
+                             collect_only=arguments.collect_only).run()
 
-            logging.info("=== (%s:%s) PYTHON DRIVER MATRIX RESULTS FOR PROTOCOL v%s ===",
-                         arguments.driver_type, driver_version, protocol)
-            logging.info(", ".join(f"{key}: {value}" for key, value in result.summary.items()))
-            if result.is_failed:
-                if not result.summary["tests"]:
-                    logging.error("The run is failed because of one or more steps in the setup are failed")
-                else:
-                    logging.error("Please check the report because there were failed tests")
+                logging.info("=== (%s:%s) PYTHON DRIVER MATRIX RESULTS FOR PROTOCOL v%s ===",
+                             arguments.driver_type, driver_version, protocol)
+                logging.info(", ".join(f"{key}: {value}" for key, value in result.summary.items()))
+                if result.is_failed:
+                    if not result.summary["tests"]:
+                        logging.error("The run is failed because of one or more steps in the setup are failed")
+                    else:
+                        logging.error("Please check the report because there were failed tests")
+                    status = 1
+                results[(driver_version, protocol)] = result.summary
+            except Exception:
+                logging.exception(f"{driver_version} failed")
                 status = 1
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                results[(driver_version, protocol)] = dict(exception=traceback.format_exception(exc_type, exc_value, exc_traceback))
+
+    if arguments.recipients:
+        email_report = create_report(results=results)
+        email_report['driver_remote'] = get_driver_origin_remote(arguments.python_driver_git)
+        email_report['status'] = "SUCCESS" if status == 0 else "FAILED"
+        send_mail(arguments.recipients, email_report)
+
     quit(status)
 
 
@@ -80,6 +99,7 @@ def get_arguments() -> argparse.Namespace:
                         default=os.environ.get('SCYLLA_VERSION', None)),
     parser.add_argument('--collect-only', action="store_true", help="Show the all test names without run them",
                         default=False)
+    parser.add_argument('--recipients', help="whom to send mail at the end of the run",  nargs='+', default=None)
     arguments = parser.parse_args()
 
     driver_versions = str(arguments.versions).replace(" ", "")
