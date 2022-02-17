@@ -1,2 +1,1 @@
-docker.io/scylladb/scylla-python-driver-matrix:python3.8-20220103
-
+scylladb/scylla-python-driver-matrix:python3.8-20220217

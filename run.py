@@ -108,9 +108,9 @@ class Run:
                     logging.info("Applying patch file '%s'", file_path)
                     self._run_command_in_shell(f"patch -p1 -i {file_path}")
                 except Exception as exc:
-                    logging.error("Failed to apply patch '%s' to version '%s', with: '%s'",
-                                  file_path, self.driver_version, str(exc))
-                    return False
+                    logging.exception("Failed to apply patch '%s' to version '%s'",
+                                      file_path, self.driver_version)
+                    raise
         return True
 
     @lru_cache(maxsize=None)
