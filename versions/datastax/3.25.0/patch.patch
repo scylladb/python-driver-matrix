@@ -1,12 +1,21 @@
-Index: tests/integration/__init__.py
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
-diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
---- a/tests/integration/__init__.py	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
-+++ b/tests/integration/__init__.py	(date 1642346556578)
-@@ -36,6 +36,7 @@
+diff --git c/test-requirements.txt w/test-requirements.txt
+index 9e62bfde..a6b477a4 100644
+--- c/test-requirements.txt
++++ w/test-requirements.txt
+@@ -2,7 +2,7 @@
+ scales
+ nose
+ mock>1.1
+-ccm>=2.1.2
++#ccm>=2.1.2
+ unittest2
+ pytz
+ sure
+diff --git c/tests/integration/__init__.py w/tests/integration/__init__.py
+index 9d350af7..5d80827a 100644
+--- c/tests/integration/__init__.py
++++ w/tests/integration/__init__.py
+@@ -36,6 +36,7 @@ from itertools import groupby
  import six
  import shutil
  
@@ -14,7 +23,7 @@ diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
  from cassandra import OperationTimedOut, ReadTimeout, ReadFailure, WriteTimeout, WriteFailure, AlreadyExists,\
      InvalidRequest
  from cassandra.protocol import ConfigurationException
-@@ -44,6 +45,7 @@
+@@ -44,6 +45,7 @@ from cassandra import ProtocolVersion
  try:
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster import Cluster as CCMCluster
@@ -22,7 +31,7 @@ diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
  except ImportError as e:
-@@ -161,16 +163,21 @@
+@@ -161,16 +163,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
  SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
  CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
  
@@ -47,7 +56,16 @@ diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
      try:
          cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
      except:
-@@ -436,7 +443,7 @@
+@@ -194,6 +201,8 @@ if DSE_VERSION:
+ elif CASSANDRA_DIR:
+     log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+     CCM_KWARGS['install_dir'] = CASSANDRA_DIR
++elif SCYLLA_VERSION:
++    CCM_KWARGS['cassandra_version'] = SCYLLA_VERSION
+ else:
+     log.info('Using Cassandra version: %s', CCM_VERSION)
+     CCM_KWARGS['version'] = CCM_VERSION
+@@ -436,7 +445,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
          if [len(list(nodes)) for dc, nodes in
                  groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
              for node in CCM_CLUSTER.nodelist():
@@ -56,7 +74,7 @@ diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -557,8 +564,12 @@
+@@ -557,8 +566,12 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
  
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
@@ -71,7 +89,7 @@ diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
                  if Version(cassandra_version) >= Version('2.2'):
                      CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                      if Version(cassandra_version) >= Version('3.0'):
-@@ -571,18 +582,18 @@
+@@ -571,18 +584,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
                              })
                  common.switch_cluster(path, cluster_name)
                  CCM_CLUSTER.set_configuration_options(configuration_options)
@@ -96,49 +114,11 @@ diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
          if len(workloads) > 0:
              for node in CCM_CLUSTER.nodes.values():
                  node.set_workloads(workloads)
-Index: test-requirements.txt
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
-diff --git a/test-requirements.txt b/test-requirements.txt
---- a/test-requirements.txt	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
-+++ b/test-requirements.txt	(date 1642346543518)
-@@ -2,7 +2,7 @@
- scales
- nose
- mock>1.1
--ccm>=2.1.2
-+#ccm>=2.1.2
- unittest2
- pytz
- sure
-Index: tests/integration/standard/test_prepared_statements.py
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
-diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
---- a/tests/integration/standard/test_prepared_statements.py	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
-+++ b/tests/integration/standard/test_prepared_statements.py	(date 1642346543518)
-@@ -168,7 +168,7 @@
-     def _run_too_many_bind_values(self, session):
-         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
-          # logic needed work with changes in CASSANDRA-6237
--        if self.cass_version[0] >= (3, 0, 0):
-+        if self.cass_version[0] >= (2, 2, 8):
-             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
-         else:
-             prepared = session.prepare(statement_to_prepare)
-Index: tests/integration/standard/test_authentication_misconfiguration.py
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
-diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
---- a/tests/integration/standard/test_authentication_misconfiguration.py	(revision 15d715f4e686032b02ce785eca1d176d2b25e32b)
-+++ b/tests/integration/standard/test_authentication_misconfiguration.py	(date 1642346543518)
-@@ -19,6 +19,12 @@
+diff --git c/tests/integration/standard/test_authentication_misconfiguration.py w/tests/integration/standard/test_authentication_misconfiguration.py
+index 546141d8..a8cb9396 100644
+--- c/tests/integration/standard/test_authentication_misconfiguration.py
++++ w/tests/integration/standard/test_authentication_misconfiguration.py
+@@ -19,6 +19,12 @@ from tests.integration import USE_CASS_EXTERNAL, use_cluster, TestCluster
  
  class MisconfiguredAuthenticationTests(unittest.TestCase):
      """ One node (not the contact point) has password auth. The rest of the nodes have no auth """
@@ -151,3 +131,16 @@ diff --git a/tests/integration/standard/test_authentication_misconfiguration.py 
      @classmethod
      def setUpClass(cls):
          if not USE_CASS_EXTERNAL:
+diff --git c/tests/integration/standard/test_prepared_statements.py w/tests/integration/standard/test_prepared_statements.py
+index 5c79f273..0173763d 100644
+--- c/tests/integration/standard/test_prepared_statements.py
++++ w/tests/integration/standard/test_prepared_statements.py
+@@ -168,7 +168,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_too_many_bind_values(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+          # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
