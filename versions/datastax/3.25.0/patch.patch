@@ -131,6 +131,19 @@ index 546141d8..a8cb9396 100644
      @classmethod
      def setUpClass(cls):
          if not USE_CASS_EXTERNAL:
+diff --git c/tests/integration/standard/test_metadata.py w/tests/integration/standard/test_metadata.py
+index bd556f35..c1e9760b 100644
+--- c/tests/integration/standard/test_metadata.py
++++ w/tests/integration/standard/test_metadata.py
+@@ -2082,7 +2082,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+ 
+         @test_category metadata
+         """
+-        self.assertIn("SizeTieredCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
++        self.assertIn(self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"], ["SizeTieredCompactionStrategy", "IncrementalCompactionStrategy"])
+ 
+         self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
+         self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
 diff --git c/tests/integration/standard/test_prepared_statements.py w/tests/integration/standard/test_prepared_statements.py
 index 5c79f273..0173763d 100644
 --- c/tests/integration/standard/test_prepared_statements.py
