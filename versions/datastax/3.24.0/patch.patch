@@ -131,6 +131,19 @@ index 546141d8..a8cb9396 100644
      @classmethod
      def setUpClass(cls):
          if not USE_CASS_EXTERNAL:
+diff --git c/tests/integration/standard/test_custom_cluster.py w/tests/integration/standard/test_custom_cluster.py
+index 84e07370..0ab1b264 100644
+--- c/tests/integration/standard/test_custom_cluster.py
++++ w/tests/integration/standard/test_custom_cluster.py
+@@ -29,7 +29,7 @@ def setup_module():
+     config_options = {'native_transport_port': 9046}
+     ccm_cluster.set_configuration_options(config_options)
+     # can't use wait_for_binary_proto cause ccm tries on port 9042
+-    ccm_cluster.start(wait_for_binary_proto=False)
++    ccm_cluster.start(wait_for_binary_proto=True)
+     # wait until all nodes are up
+     wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.1'], port=9046).connect().shutdown(), 1, 20)
+     wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.2'], port=9046).connect().shutdown(), 1, 20)
 diff --git c/tests/integration/standard/test_metadata.py w/tests/integration/standard/test_metadata.py
 index bd556f35..c1e9760b 100644
 --- c/tests/integration/standard/test_metadata.py
