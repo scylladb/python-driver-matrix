@@ -165,7 +165,7 @@ class Run:
         logging.info("Changing the current working directory to the '%s' path", self._python_driver_git)
         os.chdir(self._python_driver_git)
         if self._checkout_branch() and self._apply_patch_files() and self._install_python_requirements():
-            self._run_command_in_shell(f"python3 setup.py build")
+            self._run_command_in_shell(f"{self._activate_venv_cmd()} && pip install -e .")
             pytest_cmd = f"pytest -v -rxXs --junitxml={self.xunit_file} -o junit_family=xunit2 -s {self._tests}"
             if self._collect_only:
                 pytest_cmd += " --collect-only"
