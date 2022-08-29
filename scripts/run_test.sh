@@ -98,6 +98,12 @@ else
     "
 fi
 
+group_args=()
+for gid in $(id -G); do
+    group_args+=(--group-add "$gid")
+done
+
+
 docker_cmd="docker run --detach=true \
     ${WORKSPACE_MNT} \
     ${DOCKER_COMMAND_PARAMS} \
@@ -114,15 +120,19 @@ docker_cmd="docker run --detach=true \
     ${JOB_OPTIONS} \
     ${AWS_OPTIONS} \
     -w ${PYTHON_MATRIX_DIR} \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
     -v /etc/passwd:/etc/passwd:ro \
     -v /etc/group:/etc/group:ro \
     -u $(id -u ${USER}):$(id -g ${USER}) \
+    ${group_args[@]} \
     --tmpfs ${HOME}/.cache \
     --tmpfs ${HOME}/.config \
+    --tmpfs ${HOME}/.cassandra \
     -v ${HOME}/.local:${HOME}/.local \
     -v ${HOME}/.ccm:${HOME}/.ccm \
-    --network=bridge --privileged \
-    ${DOCKER_IMAGE} bash -c 'pip install --force-reinstall --user -e ${CCM_DIR} ; export PATH=\$PATH:\${HOME}/.local/bin ; $*'"
+    --network=host --privileged \
+    ${DOCKER_IMAGE} bash -c '$*'"
 
 echo "Running Docker: $docker_cmd"
 container=$(eval $docker_cmd)
