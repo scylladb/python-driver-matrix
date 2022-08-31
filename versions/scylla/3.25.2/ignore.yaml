@@ -20,6 +20,7 @@ tests:
     - tests.integration.standard.test_shard_aware.TestShardAwareIntegration.test_closing_connections
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
   flaky:
+    - tests.integration.standard.test_metadata.MetaDataRemovalTest.test_bad_contact_point
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
 v4_tests:
@@ -64,4 +65,5 @@ v4_tests:
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
   flaky:
+    - tests.integration.standard.test_metadata.MetaDataRemovalTest.test_bad_contact_point
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
