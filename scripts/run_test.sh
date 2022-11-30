@@ -88,12 +88,12 @@ if [[ -z ${SCYLLA_VERSION} ]]; then
     "
 
 else
+    # export all SCYLLA_* env vars into the docker run
+    SCYLLA_OPTIONS=$(env | sed -n 's/^\(SCYLLA_[^=]\+\)=.*/--env \1/p')
+
     DOCKER_COMMAND_PARAMS="
-    -e SCYLLA_VERSION=${SCYLLA_VERSION} \
-    -e MAPPED_SCYLLA_VERSION=${MAPPED_SCYLLA_VERSION} \
-    -e SCYLLA_CORE_PACKAGE=${SCYLLA_CORE_PACKAGE} \
-    -e SCYLLA_JAVA_TOOLS_PACKAGE=${SCYLLA_JAVA_TOOLS_PACKAGE} \
-    -e SCYLLA_JMX_PACKAGE=${SCYLLA_JMX_PACKAGE} \
+    ${SCYLLA_OPTIONS} \
+    -e MAPPED_SCYLLA_VERSION \
     -e EVENT_LOOP_MANAGER
     "
 fi
@@ -113,8 +113,6 @@ docker_cmd="docker run --detach=true \
     -e HOME \
     -e SCYLLA_EXT_OPTS \
     -e LC_ALL=en_US.UTF-8 \
-    -e NODE_TOTAL \
-    -e NODE_INDEX \
     -e WORKSPACE \
     ${BUILD_OPTIONS} \
     ${JOB_OPTIONS} \
