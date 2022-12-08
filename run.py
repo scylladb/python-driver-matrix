@@ -171,6 +171,8 @@ class Run:
                 pytest_cmd += " --collect-only"
             subprocess.call(f"{self._activate_venv_cmd()} && {pytest_cmd} -qq", shell=True, executable="/bin/bash",
                             env=self.environment, cwd=self._python_driver_git)
+            # clean ccm clusters, for next runs
+            self._run_command_in_shell("rm -rf tests/integration/ccm | true")
             junit.save_after_analysis(driver_version=self.driver_version, protocol=self._protocol,
                                       python_driver_type=self._python_driver_type)
         return junit
