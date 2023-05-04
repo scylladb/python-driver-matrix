@@ -1,7 +1,7 @@
-diff --git c/test-requirements.txt w/test-requirements.txt
-index 9e62bfde..a6b477a4 100644
---- c/test-requirements.txt
-+++ w/test-requirements.txt
+diff --git a/test-requirements.txt b/test-requirements.txt
+index 996cf434..d51c4895 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
 @@ -2,7 +2,7 @@
  scales
  nose
@@ -11,11 +11,11 @@ index 9e62bfde..a6b477a4 100644
  pytz
  sure
  pure-sasl
-diff --git c/tests/integration/__init__.py w/tests/integration/__init__.py
-index 9d350af7..5d80827a 100644
---- c/tests/integration/__init__.py
-+++ w/tests/integration/__init__.py
-@@ -36,6 +36,7 @@ from itertools import groupby
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index a344931a..55ff3941 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -33,6 +33,7 @@ from itertools import groupby
  import six
  import shutil
  
@@ -23,7 +23,7 @@ index 9d350af7..5d80827a 100644
  from cassandra import OperationTimedOut, ReadTimeout, ReadFailure, WriteTimeout, WriteFailure, AlreadyExists,\
      InvalidRequest
  from cassandra.protocol import ConfigurationException
-@@ -44,6 +45,7 @@ from cassandra import ProtocolVersion
+@@ -41,6 +42,7 @@ from cassandra import ProtocolVersion
  try:
      from ccmlib.dse_cluster import DseCluster
      from ccmlib.cluster import Cluster as CCMCluster
@@ -31,7 +31,7 @@ index 9d350af7..5d80827a 100644
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
  except ImportError as e:
-@@ -161,16 +163,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
+@@ -166,16 +168,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
  SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
  CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
  
@@ -56,7 +56,7 @@ index 9d350af7..5d80827a 100644
      try:
          cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
      except:
-@@ -194,6 +201,8 @@ if DSE_VERSION:
+@@ -199,6 +206,8 @@ if DSE_VERSION:
  elif CASSANDRA_DIR:
      log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
      CCM_KWARGS['install_dir'] = CASSANDRA_DIR
@@ -65,7 +65,7 @@ index 9d350af7..5d80827a 100644
  else:
      log.info('Using Cassandra version: %s', CCM_VERSION)
      CCM_KWARGS['version'] = CCM_VERSION
-@@ -436,7 +445,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
+@@ -441,7 +450,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
          if [len(list(nodes)) for dc, nodes in
                  groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
              for node in CCM_CLUSTER.nodelist():
@@ -74,7 +74,7 @@ index 9d350af7..5d80827a 100644
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -557,8 +566,12 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -563,8 +572,12 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
  
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
@@ -89,7 +89,7 @@ index 9d350af7..5d80827a 100644
                  if Version(cassandra_version) >= Version('2.2'):
                      CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                      if Version(cassandra_version) >= Version('3.0'):
-@@ -571,18 +584,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -577,18 +590,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
                              })
                  common.switch_cluster(path, cluster_name)
                  CCM_CLUSTER.set_configuration_options(configuration_options)
@@ -114,10 +114,39 @@ index 9d350af7..5d80827a 100644
          if len(workloads) > 0:
              for node in CCM_CLUSTER.nodes.values():
                  node.set_workloads(workloads)
-diff --git c/tests/integration/standard/test_authentication_misconfiguration.py w/tests/integration/standard/test_authentication_misconfiguration.py
+diff --git a/tests/integration/conftest.py b/tests/integration/conftest.py
+new file mode 100644
+index 00000000..7a4ae174
+--- /dev/null
++++ b/tests/integration/conftest.py
+@@ -0,0 +1,23 @@
++import os
++import logging
++
++import pytest
++from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
++
++from . import CLUSTER_NAME, SINGLE_NODE_CLUSTER_NAME, MULTIDC_CLUSTER_NAME
++from . import path as ccm_path
++
++
++@pytest.fixture(scope="session", autouse=True)
++def cleanup_clusters():
++
++    yield
++
++    if not os.environ.get('DISABLE_CLUSTER_CLEANUP'):
++        for cluster_name in [CLUSTER_NAME, SINGLE_NODE_CLUSTER_NAME, MULTIDC_CLUSTER_NAME]:
++            try:
++                cluster = CCMClusterFactory.load(ccm_path, cluster_name)
++                logging.debug("Using external CCM cluster {0}".format(cluster.name))
++                cluster.clear()
++            except FileNotFoundError:
++                pass
+diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
 index 546141d8..a8cb9396 100644
---- c/tests/integration/standard/test_authentication_misconfiguration.py
-+++ w/tests/integration/standard/test_authentication_misconfiguration.py
+--- a/tests/integration/standard/test_authentication_misconfiguration.py
++++ b/tests/integration/standard/test_authentication_misconfiguration.py
 @@ -19,6 +19,12 @@ from tests.integration import USE_CASS_EXTERNAL, use_cluster, TestCluster
  
  class MisconfiguredAuthenticationTests(unittest.TestCase):
@@ -131,11 +160,11 @@ index 546141d8..a8cb9396 100644
      @classmethod
      def setUpClass(cls):
          if not USE_CASS_EXTERNAL:
-diff --git c/tests/integration/standard/test_custom_cluster.py w/tests/integration/standard/test_custom_cluster.py
-index 84e07370..0ab1b264 100644
---- c/tests/integration/standard/test_custom_cluster.py
-+++ w/tests/integration/standard/test_custom_cluster.py
-@@ -29,7 +29,7 @@ def setup_module():
+diff --git a/tests/integration/standard/test_custom_cluster.py b/tests/integration/standard/test_custom_cluster.py
+index d0f10d51..d8353ec3 100644
+--- a/tests/integration/standard/test_custom_cluster.py
++++ b/tests/integration/standard/test_custom_cluster.py
+@@ -26,7 +26,7 @@ def setup_module():
      config_options = {'native_transport_port': 9046}
      ccm_cluster.set_configuration_options(config_options)
      # can't use wait_for_binary_proto cause ccm tries on port 9042
@@ -144,11 +173,11 @@ index 84e07370..0ab1b264 100644
      # wait until all nodes are up
      wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.1'], port=9046).connect().shutdown(), 1, 20)
      wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.2'], port=9046).connect().shutdown(), 1, 20)
-diff --git c/tests/integration/standard/test_metadata.py w/tests/integration/standard/test_metadata.py
-index bd556f35..c1e9760b 100644
---- c/tests/integration/standard/test_metadata.py
-+++ w/tests/integration/standard/test_metadata.py
-@@ -2082,7 +2082,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
+index b83df220..8750613a 100644
+--- a/tests/integration/standard/test_metadata.py
++++ b/tests/integration/standard/test_metadata.py
+@@ -2079,7 +2079,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
  
          @test_category metadata
          """
@@ -157,10 +186,10 @@ index bd556f35..c1e9760b 100644
  
          self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
          self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
-diff --git c/tests/integration/standard/test_prepared_statements.py w/tests/integration/standard/test_prepared_statements.py
-index 5c79f273..0173763d 100644
---- c/tests/integration/standard/test_prepared_statements.py
-+++ w/tests/integration/standard/test_prepared_statements.py
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+index a643b19c..bbde2aff 100644
+--- a/tests/integration/standard/test_prepared_statements.py
++++ b/tests/integration/standard/test_prepared_statements.py
 @@ -168,7 +168,7 @@ class PreparedStatementTests(unittest.TestCase):
      def _run_too_many_bind_values(self, session):
          statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
