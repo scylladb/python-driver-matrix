@@ -104,10 +104,16 @@ class Run:
                     logging.info("Show patch's statistics for file '%s'", file_path)
                     self._run_command_in_shell(f"git apply --stat {file_path}")
                     logging.info("Detect patch's errors for file '%s'", file_path)
-                    self._run_command_in_shell(f"git apply --check {file_path}")
+                    try:
+                        self._run_command_in_shell(f"git apply --check {file_path}")
+                    except AssertionError as exc:
+                        if 'tests/integration/conftest.py' in str(exc):
+                            self._run_command_in_shell(f"rm tests/integration/conftest.py")
+                        else:
+                            raise
                     logging.info("Applying patch file '%s'", file_path)
                     self._run_command_in_shell(f"patch -p1 -i {file_path}")
-                except Exception as exc:
+                except Exception:
                     logging.exception("Failed to apply patch '%s' to version '%s'",
                                       file_path, self.driver_version)
                     raise
