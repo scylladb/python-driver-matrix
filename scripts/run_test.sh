@@ -35,12 +35,9 @@ if [[ ! -d ${CCM_DIR} ]]; then
     exit 1
 fi
 
-if [[ ! -d ${HOME}/.ccm ]]; then
-    mkdir -p ${HOME}/.ccm
-fi
-if [[ ! -d ${HOME}/.local ]]; then
-    mkdir -p ${HOME}/.local/lib
-fi
+mkdir -p ${HOME}/.ccm
+mkdir -p ${HOME}/.local/lib
+mkdir -p ${HOME}/.docker
 
 # export all BUILD_* env vars into the docker run
 BUILD_OPTIONS=$(env | sed -n 's/^\(BUILD_[^=]\+\)=.*/--env \1/p')
@@ -55,6 +52,8 @@ WORKSPACE_MNT="-v ${WORKSPACE}:${WORKSPACE}"
 else
 WORKSPACE_MNT=""
 fi
+
+DOCKER_CONFIG_MNT="-v $(eval echo ~${USER})/.docker:${HOME}/.docker"
 
 if [[ -z ${SCYLLA_VERSION} ]]; then
 
@@ -104,15 +103,18 @@ for gid in $(id -G); do
 done
 
 
+
 docker_cmd="docker run --detach=true \
     ${WORKSPACE_MNT} \
     ${DOCKER_COMMAND_PARAMS} \
+    ${DOCKER_CONFIG_MNT} \
     -v ${PYTHON_MATRIX_DIR}:${PYTHON_MATRIX_DIR} \
     -v ${PYTHON_DRIVER_DIR}:${PYTHON_DRIVER_DIR} \
     -v ${CCM_DIR}:${CCM_DIR} \
     -e HOME \
     -e SCYLLA_EXT_OPTS \
     -e LC_ALL=en_US.UTF-8 \
+    -e DEV_MODE \
     -e WORKSPACE \
     ${BUILD_OPTIONS} \
     ${JOB_OPTIONS} \
