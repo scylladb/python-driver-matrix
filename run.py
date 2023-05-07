@@ -172,7 +172,8 @@ class Run:
         os.chdir(self._python_driver_git)
         if self._checkout_branch() and self._apply_patch_files() and self._install_python_requirements():
             self._run_command_in_shell(f"{self._activate_venv_cmd()} && pip install -e .")
-            pytest_cmd = f"pytest -v -rxXs --junitxml={self.xunit_file} -o junit_family=xunit2 -s {self._tests}"
+            debug = '--log-cli-level=debug' if os.environ.get("DEV_MODE") else ''
+            pytest_cmd = f"pytest -vvv {debug} -rxXs --junitxml={self.xunit_file} -o junit_family=xunit2 -s {self._tests}"
             if self._collect_only:
                 pytest_cmd += " --collect-only"
             subprocess.call(f"{self._activate_venv_cmd()} && {pytest_cmd} -qq", shell=True, executable="/bin/bash",
