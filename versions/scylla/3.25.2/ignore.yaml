@@ -23,6 +23,7 @@ tests:
     - tests.integration.standard.test_metadata.MetaDataRemovalTest.test_bad_contact_point
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
+    - tests.integration.standard.test_cluster.ClusterTests.test_idle_heartbeat
 v4_tests:
   ignore:
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_basic
@@ -67,3 +68,4 @@ v4_tests:
   flaky:
     - tests.integration.standard.test_metadata.MetaDataRemovalTest.test_bad_contact_point
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
+    - tests.integration.standard.test_cluster.ClusterTests.test_idle_heartbeat
