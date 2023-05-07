@@ -311,9 +311,24 @@ index eef89b64..695e74c6 100644
          self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
          self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
 diff --git a/tests/integration/standard/test_query.py b/tests/integration/standard/test_query.py
-index 7eb4cd39..697dd927 100644
+index 7eb4cd39..71c1aee3 100644
 --- a/tests/integration/standard/test_query.py
 +++ b/tests/integration/standard/test_query.py
+@@ -506,11 +506,11 @@ class PreparedStatementArgTest(unittest.TestCase):
+ 
+     def setUp(self):
+         self.mock_handler = MockLoggingHandler()
+-        logger = logging.getLogger(cluster.__name__)
+-        logger.addHandler(self.mock_handler)
++        self.logger = logging.getLogger(cluster.__name__)
++        self.logger.addHandler(self.mock_handler)
+     
+     def tearDown(self):
+-        logger.removeHandler(self.mock_handler)
++        self.logger.removeHandler(self.mock_handler)
+ 
+     def test_prepare_on_all_hosts(self):
+         """
 @@ -957,7 +957,6 @@ class LightweightTransactionTests(unittest.TestCase):
          self.assertTrue(received_timeout)
  
