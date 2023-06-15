@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster
+FROM python:3.11-slim-buster
 
 RUN apt-get update \
     && apt-get -y install \
@@ -14,10 +14,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get -y update \
-    && apt-get -y install software-properties-common \
-    && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
-    && apt-get -y update \
-    && apt-get -y install openjdk-8-jdk-headless libev4 libev-dev patch gcc git procps python2 docker-ce-cli \
+    && apt-get -y install openjdk-11-jdk-headless libev4 libev-dev patch gcc git procps python2 docker-ce-cli \
     && pip install --upgrade pip \
     && rm -rf /var/lib/apt/lists/*
 
