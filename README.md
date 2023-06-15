@@ -110,7 +110,7 @@ All repositories should be under the **same base folder**
 #### Uploading docker images
 When doing changes to `requirements.txt`, or any other change to docker image, it can be uploaded like this:
 ```bash
-    export MATRIX_DOCKER_IMAGE=scylladb/scylla-python-driver-matrix:python3.8-$(date +'%Y%m%d')
+    export MATRIX_DOCKER_IMAGE=scylladb/scylla-python-driver-matrix:python3.11-$(date +'%Y%m%d')
     docker build ./scripts -t ${MATRIX_DOCKER_IMAGE}
     docker push ${MATRIX_DOCKER_IMAGE}
     echo "${MATRIX_DOCKER_IMAGE}" > scripts/image
