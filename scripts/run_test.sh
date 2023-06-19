@@ -93,7 +93,7 @@ else
     DOCKER_COMMAND_PARAMS="
     ${SCYLLA_OPTIONS} \
     -e MAPPED_SCYLLA_VERSION \
-    -e EVENT_LOOP_MANAGER
+    -e EVENT_LOOP_MANAGER=libev
     "
 fi
 
