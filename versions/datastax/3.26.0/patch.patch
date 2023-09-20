@@ -12,7 +12,7 @@ index 996cf434..d51c4895 100644
  sure
  pure-sasl
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index a344931a..55ff3941 100644
+index a344931a..addda3a5 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
 @@ -33,6 +33,7 @@ from itertools import groupby
@@ -82,7 +82,7 @@ index a344931a..55ff3941 100644
 -                CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
 +                if SCYLLA_VERSION:
 +                    CCM_CLUSTER = CCMScyllaCluster(path, cluster_name, **ccm_options)
-+                    CCM_CLUSTER.set_configuration_options({'experimental': True})
++                    CCM_CLUSTER.set_configuration_options({'experimental_features': ['udf']})
 +                else:
 +                    CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
 +                    CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
