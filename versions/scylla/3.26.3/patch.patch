@@ -1,0 +1,277 @@
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index cc852898..5d20ecd1 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -43,6 +43,7 @@ from cassandra.protocol import ConfigurationException
+ from cassandra import ProtocolVersion
+ 
+ try:
++    import ccmlib
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster import Cluster as CCMCluster
+     from ccmlib.scylla_cluster import ScyllaCluster as CCMScyllaCluster
+@@ -97,6 +98,12 @@ def get_server_versions():
+     return (cass_version, cql_version)
+ 
+ 
++def get_scylla_version(scylla_ccm_version_string):
++    """ get scylla version from ccm before starting a cluster"""
++    ccm_repo_cache_dir, _ = ccmlib.scylla_repository.setup(version=scylla_ccm_version_string)
++    return  ccmlib.common.get_version_from_build(ccm_repo_cache_dir)
++
++
+ def _tuple_version(version_string):
+     if '-' in version_string:
+         version_string = version_string[:version_string.index('-')]
+@@ -372,7 +379,7 @@ lessthandse60 = unittest.skipUnless(DSE_VERSION and DSE_VERSION < Version('6.0')
+ # 1. unittest doesn't skip setUpClass when used on class and we need it sometimes
+ # 2. unittest doesn't have conditional xfail, and I prefer to use pytest than custom decorator
+ # 3. unittest doesn't have a reason argument, so you don't see the reason in pytest report
+-requires_collection_indexes = pytest.mark.skipif(SCYLLA_VERSION is not None and Version(SCYLLA_VERSION.split(':')[1]) < Version('5.2'),
++requires_collection_indexes = pytest.mark.skipif(SCYLLA_VERSION is not None and Version(get_scylla_version(SCYLLA_VERSION)) < Version('5.2'),
+                                               reason='Scylla supports collection indexes from 5.2 onwards') 
+ requires_custom_indexes = pytest.mark.skipif(SCYLLA_VERSION is not None,
+                                           reason='Scylla does not support SASI or any other CUSTOM INDEX class')
+diff --git a/tests/integration/standard/test_client_warnings.py b/tests/integration/standard/test_client_warnings.py
+index 6d5e040e..79df77fe 100644
+--- a/tests/integration/standard/test_client_warnings.py
++++ b/tests/integration/standard/test_client_warnings.py
+@@ -28,7 +28,6 @@ def setup_module():
+ 
+ # Failing with scylla because there is no warning message when changing the value of 'batch_size_warn_threshold_in_kb'
+ # config")
+-@xfail_scylla('Empty warnings: TypeError: object of type \'NoneType\' has no len()')
+ class ClientWarningTests(unittest.TestCase):
+ 
+     @classmethod
+diff --git a/tests/integration/standard/test_cluster.py b/tests/integration/standard/test_cluster.py
+index 43a1d080..d1342035 100644
+--- a/tests/integration/standard/test_cluster.py
++++ b/tests/integration/standard/test_cluster.py
+@@ -289,7 +289,6 @@ class ClusterTests(unittest.TestCase):
+ 
+         cluster.shutdown()
+ 
+-    @xfail_scylla("Failing with scylla because there is option to create a cluster with 'lower bound' protocol")
+     def test_invalid_protocol_negotation(self):
+         """
+         Test for protocol negotiation when explicit versions are set
+@@ -1226,7 +1225,6 @@ class ClusterTests(unittest.TestCase):
+ 
+     @greaterthanorequalcass30
+     @lessthanorequalcass40
+-    @incorrect_test()
+     def test_compact_option(self):
+         """
+         Test the driver can connect with the no_compact option and the results
+diff --git a/tests/integration/standard/test_custom_cluster.py b/tests/integration/standard/test_custom_cluster.py
+index 6cdfb8d1..46ec7fa1 100644
+--- a/tests/integration/standard/test_custom_cluster.py
++++ b/tests/integration/standard/test_custom_cluster.py
+@@ -26,7 +26,7 @@ def setup_module():
+     config_options = {'native_transport_port': 9046}
+     ccm_cluster.set_configuration_options(config_options)
+     # can't use wait_for_binary_proto cause ccm tries on port 9042
+-    ccm_cluster.start(wait_for_binary_proto=False)
++    ccm_cluster.start(wait_for_binary_proto=True)
+     # wait until all nodes are up
+     wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.1'], port=9046).connect().shutdown(), 1, 20)
+     wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.2'], port=9046).connect().shutdown(), 1, 20)
+diff --git a/tests/integration/standard/test_custom_protocol_handler.py b/tests/integration/standard/test_custom_protocol_handler.py
+index 3ec94b05..7443ce07 100644
+--- a/tests/integration/standard/test_custom_protocol_handler.py
++++ b/tests/integration/standard/test_custom_protocol_handler.py
+@@ -121,7 +121,6 @@ class CustomProtocolHandlerTest(unittest.TestCase):
+         self.assertEqual(len(CustomResultMessageTracked.checked_rev_row_set), len(PRIMITIVE_DATATYPES)-1)
+         cluster.shutdown()
+ 
+-    @unittest.expectedFailure
+     @requirecassandra
+     @greaterthanorequalcass40
+     def test_protocol_divergence_v5_fail_by_continuous_paging(self):
+@@ -169,7 +168,6 @@ class CustomProtocolHandlerTest(unittest.TestCase):
+         self._protocol_divergence_fail_by_flag_uses_int(ProtocolVersion.V4, uses_int_query_flag=False,
+                                                         int_flag=True)
+ 
+-    @unittest.expectedFailure
+     @requirecassandra
+     @greaterthanorequalcass40
+     def test_protocol_v5_uses_flag_int(self):
+@@ -197,7 +195,6 @@ class CustomProtocolHandlerTest(unittest.TestCase):
+         self._protocol_divergence_fail_by_flag_uses_int(ProtocolVersion.DSE_V1, uses_int_query_flag=True,
+                                                         int_flag=True)
+ 
+-    @unittest.expectedFailure
+     @requirecassandra
+     @greaterthanorequalcass40
+     def test_protocol_divergence_v5_fail_by_flag_uses_int(self):
+diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
+index c561491a..8c37afa0 100644
+--- a/tests/integration/standard/test_metadata.py
++++ b/tests/integration/standard/test_metadata.py
+@@ -476,7 +476,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         tablemeta = self.get_table_metadata()
+         self.check_create_statement(tablemeta, create_statement)
+ 
+-    @pytest.mark.skip(reason='https://github.com/scylladb/scylladb/issues/6058')
+     def test_indexes(self):
+         create_statement = self.make_create_statement(["a"], ["b", "c"], ["d", "e", "f"])
+         create_statement += " WITH CLUSTERING ORDER BY (b ASC, c ASC)"
+@@ -502,7 +501,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         self.assertIn('CREATE INDEX e_index', statement)
+ 
+     @greaterthancass21
+-    @requires_collection_indexes
+     def test_collection_indexes(self):
+ 
+         self.session.execute("CREATE TABLE %s.%s (a int PRIMARY KEY, b map<text, text>)"
+@@ -532,8 +530,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+             tablemeta = self.get_table_metadata()
+             self.assertIn('(full(b))', tablemeta.export_as_string())
+ 
+-    #TODO: Fix Scylla or test
+-    @xfail_scylla('Scylla prints `compression = {}` instead of `compression = {\'enabled\': \'false\'}`.')
+     def test_compression_disabled(self):
+         create_statement = self.make_create_statement(["a"], ["b"], ["c"])
+         create_statement += " WITH compression = {}"
+@@ -568,7 +564,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+             self.assertNotIn("min_threshold", cql)
+             self.assertNotIn("max_threshold", cql)
+ 
+-    @requires_java_udf
+     def test_refresh_schema_metadata(self):
+         """
+         test for synchronously refreshing all cluster metadata
+@@ -841,7 +836,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+             self.assertEqual(cluster.metadata.keyspaces[self.keyspace_name].user_types, {})
+             cluster.shutdown()
+ 
+-    @requires_java_udf
+     def test_refresh_user_function_metadata(self):
+         """
+         test for synchronously refreshing UDF metadata in keyspace
+@@ -878,7 +872,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+ 
+         cluster2.shutdown()
+ 
+-    @requires_java_udf
+     def test_refresh_user_aggregate_metadata(self):
+         """
+         test for synchronously refreshing UDA metadata in keyspace
+@@ -922,7 +915,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         cluster2.shutdown()
+ 
+     @greaterthanorequalcass30
+-    @requires_collection_indexes
+     def test_multiple_indices(self):
+         """
+         test multiple indices on the same column.
+@@ -1210,7 +1202,6 @@ CREATE TABLE export_udts.users (
+         cluster.shutdown()
+ 
+     @greaterthancass21
+-    @pytest.mark.xfail(reason='Column name in CREATE INDEX is not quoted. It\'s a bug in driver or in Scylla')
+     def test_case_sensitivity(self):
+         """
+         Test that names that need to be escaped in CREATE statements are
+@@ -1280,7 +1271,6 @@ CREATE TABLE export_udts.users (
+         cluster.shutdown()
+ 
+     @local
+-    @pytest.mark.xfail(reason='AssertionError: \'RAC1\' != \'r1\' - probably a bug in driver or in Scylla')
+     def test_replicas(self):
+         """
+         Ensure cluster.metadata.get_replicas return correctly when not attached to keyspace
+@@ -1547,7 +1537,6 @@ class FunctionTest(unittest.TestCase):
+             super(FunctionTest.VerifiedAggregate, self).__init__(test_case, Aggregate, test_case.keyspace_aggregate_meta, **kwargs)
+ 
+ 
+-@requires_java_udf
+ class FunctionMetadata(FunctionTest):
+ 
+     def make_function_kwargs(self, called_on_null=True):
+@@ -2016,7 +2005,6 @@ class BadMetaTest(unittest.TestCase):
+             self.assertIn("/*\nWarning:", m.export_as_string())
+ 
+     @greaterthancass21
+-    @requires_java_udf
+     def test_bad_user_function(self):
+         self.session.execute("""CREATE FUNCTION IF NOT EXISTS %s (key int, val int)
+                                 RETURNS NULL ON NULL INPUT
+@@ -2035,7 +2023,6 @@ class BadMetaTest(unittest.TestCase):
+                 self.assertIn("/*\nWarning:", m.export_as_string())
+ 
+     @greaterthancass21
+-    @requires_java_udf
+     def test_bad_user_aggregate(self):
+         self.session.execute("""CREATE FUNCTION IF NOT EXISTS sum_int (key int, val int)
+                                 RETURNS NULL ON NULL INPUT
+@@ -2056,7 +2043,6 @@ class BadMetaTest(unittest.TestCase):
+ 
+ class DynamicCompositeTypeTest(BasicSharedKeyspaceUnitTestCase):
+ 
+-    @requires_composite_type
+     def test_dct_alias(self):
+         """
+         Tests to make sure DCT's have correct string formatting
+@@ -2139,7 +2125,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+ 
+         @test_category metadata
+         """
+-        self.assertIn("SizeTieredCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
++        self.assertIn(self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"], ["SizeTieredCompactionStrategy", "IncrementalCompactionStrategy"])
+ 
+         self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
+         self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
+diff --git a/tests/integration/standard/test_query.py b/tests/integration/standard/test_query.py
+index fdab4e7a..d2d1cc16 100644
+--- a/tests/integration/standard/test_query.py
++++ b/tests/integration/standard/test_query.py
+@@ -951,7 +951,6 @@ class LightweightTransactionTests(unittest.TestCase):
+         # Make sure test passed
+         self.assertTrue(received_timeout)
+ 
+-    @xfail_scylla('Fails on Scylla with error `SERIAL/LOCAL_SERIAL consistency may only be requested for one partition at a time`')
+     def test_was_applied_batch_stmt(self):
+         """
+         Test to ensure `:attr:cassandra.cluster.ResultSet.was_applied` works as expected
+@@ -1037,7 +1036,6 @@ class LightweightTransactionTests(unittest.TestCase):
+         with self.assertRaises(RuntimeError):
+             results.was_applied
+ 
+-    @pytest.mark.xfail(reason='Skipping until PYTHON-943 is resolved')
+     def test_was_applied_batch_string(self):
+         batch_statement = BatchStatement(BatchType.LOGGED)
+         batch_statement.add_all(["INSERT INTO test3rf.lwt_clustering (k, c, v) VALUES (0, 0, 10);",
+@@ -1461,7 +1459,6 @@ class QueryKeyspaceTests(BaseKeyspaceTests):
+ 
+ @greaterthanorequalcass40
+ class SimpleWithKeyspaceTests(QueryKeyspaceTests, unittest.TestCase):
+-    @unittest.expectedFailure
+     def test_lower_protocol(self):
+         cluster = TestCluster(protocol_version=ProtocolVersion.V4)
+         session = cluster.connect(self.ks_name)
+diff --git a/tests/integration/standard/test_shard_aware.py b/tests/integration/standard/test_shard_aware.py
+index e3d2681a..81614ba5 100644
+--- a/tests/integration/standard/test_shard_aware.py
++++ b/tests/integration/standard/test_shard_aware.py
+@@ -190,7 +190,6 @@ class TestShardAwareIntegration(unittest.TestCase):
+         time.sleep(10)
+         self.query_data(self.session)
+ 
+-    @pytest.mark.skip
+     def test_blocking_connections(self):
+         """
+         Verify that reconnection is working as expected, when connection are being blocked.
+diff --git a/tests/integration/standard/test_types.py b/tests/integration/standard/test_types.py
+index 4329574b..a3fddd74 100644
+--- a/tests/integration/standard/test_types.py
++++ b/tests/integration/standard/test_types.py
+@@ -776,7 +776,6 @@ class TypeTests(BasicSharedKeyspaceUnitTestCase):
+         s.execute(u"SELECT * FROM system.local WHERE key = 'ef\u2052ef'")
+         s.execute(u"SELECT * FROM system.local WHERE key = %s", (u"fe\u2051fe",))
+ 
+-    @requires_composite_type
+     def test_can_read_composite_type(self):
+         """
+         Test to ensure that CompositeTypes can be used in a query
