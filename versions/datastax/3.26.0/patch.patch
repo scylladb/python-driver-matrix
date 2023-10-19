@@ -12,7 +12,7 @@ index 996cf434..d51c4895 100644
  sure
  pure-sasl
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index a344931a..addda3a5 100644
+index a344931a..56ce6f15 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
 @@ -33,6 +33,7 @@ from itertools import groupby
@@ -74,7 +74,7 @@ index a344931a..addda3a5 100644
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -563,8 +572,12 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -563,8 +572,13 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
  
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
@@ -83,13 +83,14 @@ index a344931a..addda3a5 100644
 +                if SCYLLA_VERSION:
 +                    CCM_CLUSTER = CCMScyllaCluster(path, cluster_name, **ccm_options)
 +                    CCM_CLUSTER.set_configuration_options({'experimental_features': ['udf']})
++                    CCM_CLUSTER.set_configuration_options({"strict_is_not_null_in_views": False})
 +                else:
 +                    CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
 +                    CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
                  if Version(cassandra_version) >= Version('2.2'):
                      CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                      if Version(cassandra_version) >= Version('3.0'):
-@@ -577,18 +590,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -577,18 +591,18 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
                              })
                  common.switch_cluster(path, cluster_name)
                  CCM_CLUSTER.set_configuration_options(configuration_options)
