@@ -321,10 +321,16 @@ index 70037f60..e1f7cd88 100644
          cluster = TestCluster(protocol_version=ProtocolVersion.V4)
          session = cluster.connect(self.ks_name)
 diff --git a/tests/integration/standard/test_scylla_cloud.py b/tests/integration/standard/test_scylla_cloud.py
-index 422a66f3..94fb0729 100644
+index 422a66f3..751bf656 100644
 --- a/tests/integration/standard/test_scylla_cloud.py
 +++ b/tests/integration/standard/test_scylla_cloud.py
-@@ -46,7 +46,8 @@ class ScyllaCloudConfigTests(TestCase):
+@@ -41,12 +41,13 @@ class ScyllaCloudConfigTests(TestCase):
+ 
+         docker_id, listen_address, listen_port = \
+             start_sni_proxy(ccm_cluster.get_path(), nodes_info=nodes_info, listen_port=sni_port)
+-        ccm_cluster.sni_proxy_docker_id = docker_id
++        ccm_cluster.sni_proxy_docker_ids = [docker_id]
+         ccm_cluster.sni_proxy_listen_port = listen_port
          ccm_cluster._update_config()
  
          config_data_yaml, config_path_yaml = create_cloud_config(ccm_cluster.get_path(),
