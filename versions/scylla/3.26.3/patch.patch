@@ -32,6 +32,17 @@ index cc852898..5d20ecd1 100644
                                                reason='Scylla supports collection indexes from 5.2 onwards') 
  requires_custom_indexes = pytest.mark.skipif(SCYLLA_VERSION is not None,
                                            reason='Scylla does not support SASI or any other CUSTOM INDEX class')
+@@ -612,6 +612,10 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+                     # Selecting only features we need for tests, i.e. anything but CDC.
+                     CCM_CLUSTER = CCMScyllaCluster(path, cluster_name, **ccm_options)
+                     CCM_CLUSTER.set_configuration_options({'experimental_features': ['lwt', 'udf'], 'start_native_transport': True})
++
++                    # Permit IS NOT NULL restriction on non-primary key columns of a materialized view
++                    # This allows `test_metadata_with_quoted_identifiers` to run
++                    CCM_CLUSTER.set_configuration_options({'strict_is_not_null_in_views': False})
+                 else:
+                     CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
+                     CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
 diff --git a/tests/integration/standard/test_client_warnings.py b/tests/integration/standard/test_client_warnings.py
 index 6d5e040e..79df77fe 100644
 --- a/tests/integration/standard/test_client_warnings.py
