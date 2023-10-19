@@ -19,6 +19,8 @@ tests:
     - tests.integration.standard.test_prepared_statements.PreparedStatementTests.test_imprecise_bind_values_dicts
     - tests.integration.standard.test_shard_aware.TestShardAwareIntegration.test_closing_connections
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
+    - tests.integration.standard.test_scylla_cloud.ScyllaCloudConfigTests.test_1_node_cluster
+    - tests.integration.standard.test_scylla_cloud.ScyllaCloudConfigTests.test_3_node_cluster
   flaky:
     - tests.integration.standard.test_metadata.MetaDataRemovalTest.test_bad_contact_point
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
@@ -65,6 +67,8 @@ v4_tests:
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
+    - tests.integration.standard.test_scylla_cloud.ScyllaCloudConfigTests.test_1_node_cluster
+    - tests.integration.standard.test_scylla_cloud.ScyllaCloudConfigTests.test_3_node_cluster
   flaky:
     - tests.integration.standard.test_metadata.MetaDataRemovalTest.test_bad_contact_point
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
