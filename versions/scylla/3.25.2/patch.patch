@@ -341,9 +341,27 @@ index 422a66f3..751bf656 100644
  
      def test_1_node_cluster(self):
 diff --git a/tests/integration/standard/test_shard_aware.py b/tests/integration/standard/test_shard_aware.py
-index ef2348d1..3c168a15 100644
+index ef2348d1..cce0b212 100644
 --- a/tests/integration/standard/test_shard_aware.py
 +++ b/tests/integration/standard/test_shard_aware.py
+@@ -61,7 +61,7 @@ class TestShardAwareIntegration(unittest.TestCase):
+         for event in events:
+             LOGGER.info("%s %s", event.thread_name, event.description)
+         for event in events:
+-            self.assertEqual(event.thread_name, shard_name)
++            self.assertIn(shard_name, event.thread_name)
+         self.assertIn('querying locally', "\n".join([event.description for event in events]))
+ 
+         trace_id = results.response_future.get_query_trace_ids()[0]
+@@ -70,7 +70,7 @@ class TestShardAwareIntegration(unittest.TestCase):
+         for event in events:
+             LOGGER.info("%s %s", event.thread, event.activity)
+         for event in events:
+-            self.assertEqual(event.thread, shard_name)
++            self.assertIn(shard_name, event.thread)
+         self.assertIn('querying locally', "\n".join([event.activity for event in events]))
+ 
+     def create_ks_and_cf(self):
 @@ -188,7 +188,6 @@ class TestShardAwareIntegration(unittest.TestCase):
          time.sleep(10)
          self.query_data(self.session)

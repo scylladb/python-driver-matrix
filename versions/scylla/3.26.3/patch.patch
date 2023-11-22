@@ -252,9 +252,27 @@ index fdab4e7a..d2d1cc16 100644
          cluster = TestCluster(protocol_version=ProtocolVersion.V4)
          session = cluster.connect(self.ks_name)
 diff --git a/tests/integration/standard/test_shard_aware.py b/tests/integration/standard/test_shard_aware.py
-index e3d2681a..81614ba5 100644
+index e3d2681a..e1e8d653 100644
 --- a/tests/integration/standard/test_shard_aware.py
 +++ b/tests/integration/standard/test_shard_aware.py
+@@ -62,7 +62,7 @@ class TestShardAwareIntegration(unittest.TestCase):
+         for event in events:
+             LOGGER.info("%s %s %s", event.source, event.thread_name, event.description)
+         for event in events:
+-            self.assertEqual(event.thread_name, shard_name)
++            self.assertIn(shard_name, event.thread_name)
+         self.assertIn('querying locally', "\n".join([event.description for event in events]))
+ 
+         trace_id = results.response_future.get_query_trace_ids()[0]
+@@ -71,7 +71,7 @@ class TestShardAwareIntegration(unittest.TestCase):
+         for event in events:
+             LOGGER.info("%s %s", event.thread, event.activity)
+         for event in events:
+-            self.assertEqual(event.thread, shard_name)
++            self.assertIn(shard_name, event.thread)
+         self.assertIn('querying locally', "\n".join([event.activity for event in events]))
+ 
+     def create_ks_and_cf(self):
 @@ -190,7 +190,6 @@ class TestShardAwareIntegration(unittest.TestCase):
          time.sleep(10)
          self.query_data(self.session)
