@@ -1,4 +1,4 @@
-FROM python:3.9-slim-buster
+FROM python:3.12-slim-bullseye
 
 RUN apt-get update \
     && apt-get -y install \
@@ -14,7 +14,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get -y update \
-    && apt-get -y install openjdk-11-jdk-headless libev4 libev-dev patch gcc git procps python2 docker-ce-cli \
+    && apt-get -y install openjdk-11-jdk-headless libev4 libev-dev patch gcc git procps docker-ce-cli \
     && pip install --upgrade pip \
     && rm -rf /var/lib/apt/lists/*
 
