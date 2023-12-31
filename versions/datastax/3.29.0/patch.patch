@@ -115,6 +115,35 @@ index b158ed2b..2a5d7210 100644
          if len(workloads) > 0:
              for node in CCM_CLUSTER.nodes.values():
                  node.set_workloads(workloads)
+diff --git a/tests/integration/conftest.py b/tests/integration/conftest.py
+new file mode 100644
+index 00000000..7a4ae174
+--- /dev/null
++++ b/tests/integration/conftest.py
+@@ -0,0 +1,23 @@
++import os
++import logging
++
++import pytest
++from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
++
++from . import CLUSTER_NAME, SINGLE_NODE_CLUSTER_NAME, MULTIDC_CLUSTER_NAME
++from . import path as ccm_path
++
++
++@pytest.fixture(scope="session", autouse=True)
++def cleanup_clusters():
++
++    yield
++
++    if not os.environ.get('DISABLE_CLUSTER_CLEANUP'):
++        for cluster_name in [CLUSTER_NAME, SINGLE_NODE_CLUSTER_NAME, MULTIDC_CLUSTER_NAME]:
++            try:
++                cluster = CCMClusterFactory.load(ccm_path, cluster_name)
++                logging.debug("Using external CCM cluster {0}".format(cluster.name))
++                cluster.clear()
++            except FileNotFoundError:
++                pass
 diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
 index 546141d8..a8cb9396 100644
 --- a/tests/integration/standard/test_authentication_misconfiguration.py
