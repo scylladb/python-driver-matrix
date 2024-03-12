@@ -121,7 +121,7 @@ class Run:
 
     @lru_cache(maxsize=None)
     def _create_venv(self):
-        basic_packages = ("pytest",
+        basic_packages = ("pytest==7.4.4",
                           "https://github.com/scylladb/scylla-ccm/archive/master.zip",
                           "pytest-subtests")
         if self._venv_path.exists() and self._venv_path.is_dir():
