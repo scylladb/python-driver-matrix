@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -53,12 +54,24 @@ class Run:
             raise ValueError("Not found directory for python-driver version '%s'", self.driver_version)
 
     @cached_property
-    def xunit_file(self) -> Path:
-        xunit_dir = Path(os.path.dirname(__file__)) / "xunit" / self.driver_version
-        if not xunit_dir.exists():
-            xunit_dir.mkdir(parents=True)
+    def xunit_dir(self) -> Path:
+        return Path(os.path.dirname(__file__)) / "xunit" / self.driver_version
 
-        file_path = xunit_dir / f'pytest.{self._python_driver_type}.v{self._protocol}.{self.driver_version}.xml'
+    @property
+    def result_file_name(self) -> str:
+        return f'pytest.{self._python_driver_type}.v{self._protocol}.{self.driver_version}.xml'
+
+    @property
+    def metadata_file_name(self) -> str:
+        return f'metadata_{self._python_driver_type}_v{self._protocol}_{self.driver_version}.json'
+
+    @cached_property
+    def xunit_file(self) -> Path:
+        
+        if not self.xunit_dir.exists():
+            self.xunit_dir.mkdir(parents=True)
+
+        file_path = self.xunit_dir / self.result_file_name
         if file_path.exists():
             file_path.unlink()
         return file_path
@@ -166,8 +179,24 @@ class Run:
             logging.error("Failed to branch for version '%s', with: '%s'", self.driver_version, str(exc))
             return False
 
+    def create_metadata_for_failure(self, reason: str) -> None:
+        metadata_file = self.xunit_dir / self.metadata_file_name
+        metadata = {
+            "driver_name": self.result_file_name.replace(".xml", ""),
+            "driver_type": "python",
+            "failure_reason": reason,
+        }
+        metadata_file.write_text(json.dumps(metadata))
+
+
     def run(self) -> ProcessJUnit:
         junit = ProcessJUnit(self.xunit_file, self.ignore_tests)
+        metadata_file = self.xunit_dir / self.metadata_file_name
+        metadata = {
+            "driver_name": self.result_file_name.replace(".xml", ""),
+            "driver_type": "python",
+            "junit_result": f"./{self.xunit_file.name}",
+        }
         logging.info("Changing the current working directory to the '%s' path", self._python_driver_git)
         os.chdir(self._python_driver_git)
         if self._checkout_branch() and self._apply_patch_files() and self._install_python_requirements():
@@ -180,6 +209,7 @@ class Run:
                             env=self.environment, cwd=self._python_driver_git)
             # clean ccm clusters, for next runs
             self._run_command_in_shell("rm -rf tests/integration/ccm | true")
+            metadata_file.write_text(json.dumps(metadata))
             junit.save_after_analysis(driver_version=self.driver_version, protocol=self._protocol,
                                       python_driver_type=self._python_driver_type)
         return junit
