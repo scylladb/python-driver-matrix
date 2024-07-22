@@ -19,16 +19,16 @@ def main(arguments: argparse.Namespace):
     for driver_version in arguments.versions:
         for protocol in arguments.protocols:
             logging.info('=== PYTHON DRIVER VERSION %s, PROTOCOL v%s ===', driver_version, protocol)
-            try:
-                result = Run(python_driver_git=arguments.python_driver_git,
+            runner = Run(python_driver_git=arguments.python_driver_git,
                              python_driver_type=arguments.driver_type,
                              scylla_install_dir=arguments.scylla_install_dir,
                              tag=driver_version,
                              protocol=protocol,
                              tests=arguments.tests,
                              scylla_version=arguments.scylla_version,
-                             collect_only=arguments.collect_only).run()
-
+                             collect_only=arguments.collect_only)
+            try:
+                result = runner.run()
                 logging.info("=== (%s:%s) PYTHON DRIVER MATRIX RESULTS FOR PROTOCOL v%s ===",
                              arguments.driver_type, driver_version, protocol)
                 logging.info(", ".join(f"{key}: {value}" for key, value in result.summary.items()))
@@ -43,7 +43,9 @@ def main(arguments: argparse.Namespace):
                 logging.exception(f"{driver_version} failed")
                 status = 1
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                results[(driver_version, protocol)] = dict(exception=traceback.format_exception(exc_type, exc_value, exc_traceback))
+                failure_reason = traceback.format_exception(exc_type, exc_value, exc_traceback)
+                results[(driver_version, protocol)] = dict(exception=failure_reason)
+                runner.create_metadata_for_failure(reason="\n".join(failure_reason))
 
     if arguments.recipients:
         email_report = create_report(results=results)
