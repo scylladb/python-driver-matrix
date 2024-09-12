@@ -127,6 +127,7 @@ docker_cmd="docker run --detach=true \
     -u $(id -u ${USER}):$(id -g ${USER}) \
     ${group_args[@]} \
     --tmpfs ${HOME}/.cache \
+     --tmpfs ${HOME}/.shiv \
     --tmpfs ${HOME}/.config \
     --tmpfs ${HOME}/.cassandra \
     -v ${HOME}/.local:${HOME}/.local \
