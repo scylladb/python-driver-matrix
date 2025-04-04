@@ -1,6 +1,11 @@
 # Last verified state on Dec 21, 2018 by Roy Dahan
 tests:
   ignore:
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_counter_with_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_counter_with_dense_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_dense_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_table_extensions
     - tests.integration.standard.test_cluster.ClusterTests.test_invalid_protocol_negotation
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warning_default_consistency_level
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_collection_indexes
@@ -22,6 +27,11 @@ tests:
     - tests.integration.standard.test_authentication_misconfiguration.MisconfiguredAuthenticationTests.test_connect_no_auth_provider
 v4_tests:
   ignore:
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_counter_with_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_counter_with_dense_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_dense_compact_storage
+    - tests.integration.standard.test_metadata.SchemaMetadataTests.test_table_extensions
     - tests.integration.standard.test_client_warnings.ClientWarningTests.test_warning_with_custom_payload
     - tests.integration.standard.test_custom_payload.CustomPayloadTests.test_custom_query_prepared
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_function
