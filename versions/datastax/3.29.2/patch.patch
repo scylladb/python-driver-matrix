@@ -1,0 +1,207 @@
+diff --git a/test-requirements.txt b/test-requirements.txt
+index 94ac6117..b73d06bd 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
+@@ -1,7 +1,7 @@
+ -r requirements.txt
+ scales
+ pytest
+-ccm>=2.1.2
++#ccm>=2.1.2
+ pytz
+ sure
+ pure-sasl
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index e389742b..156b65f3 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -41,6 +41,7 @@ from cassandra import ProtocolVersion
+ try:
+     from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster import Cluster as CCMCluster
++    from ccmlib.scylla_cluster import ScyllaCluster as CCMScyllaCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+     from ccmlib import common
+ except ImportError as e:
+@@ -166,16 +167,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
+ SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
+ CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
+
+-# Supported Clusters: Cassandra, DDAC, DSE
++# Supported Clusters: Cassandra, DDAC, DSE, Scylla
+ DSE_VERSION = None
++SCYLLA_VERSION = os.getenv('SCYLLA_VERSION', None)
+ if os.getenv('DSE_VERSION', None):  # we are testing against DSE
+     DSE_VERSION = Version(os.getenv('DSE_VERSION', None))
+     DSE_CRED = os.getenv('DSE_CREDS', None)
+     CASSANDRA_VERSION = _get_cass_version_from_dse(DSE_VERSION.base_version)
+     CCM_VERSION = DSE_VERSION.base_version
+ else:  # we are testing against Cassandra or DDAC
+-    cv_string = os.getenv('CASSANDRA_VERSION', None)
+-    mcv_string = os.getenv('MAPPED_CASSANDRA_VERSION', None)
++    if SCYLLA_VERSION:
++        cv_string = SCYLLA_VERSION
++        mcv_string = os.getenv('MAPPED_SCYLLA_VERSION', None)
++    else:
++        cv_string = os.getenv('CASSANDRA_VERSION', None)
++        mcv_string = os.getenv('MAPPED_CASSANDRA_VERSION', None)
+     try:
+         cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
+     except:
+@@ -199,6 +205,8 @@ if DSE_VERSION:
+ elif CASSANDRA_DIR:
+     log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
+     CCM_KWARGS['install_dir'] = CASSANDRA_DIR
++elif SCYLLA_VERSION:
++    CCM_KWARGS['cassandra_version'] = SCYLLA_VERSION
+ else:
+     log.info('Using Cassandra version: %s', CCM_VERSION)
+     CCM_KWARGS['version'] = CCM_VERSION
+@@ -441,7 +449,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
+         if [len(list(nodes)) for dc, nodes in
+                 groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
+             for node in CCM_CLUSTER.nodelist():
+-                if set(node.workloads) != set(workloads):
++                if set(getattr(node, 'workloads', [])) != set(workloads):
+                     print("node workloads don't match creating new cluster")
+                     return False
+             return True
+@@ -563,9 +571,14 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+
+                 CCM_CLUSTER.set_dse_configuration_options(dse_options)
+             else:
+-                ccm_cluster_clz = CCMCluster if Version(cassandra_version) < Version('4.1') else Cassandra41CCMCluster
+-                CCM_CLUSTER = ccm_cluster_clz(path, cluster_name, **ccm_options)
+-                CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
++                if SCYLLA_VERSION:
++                    CCM_CLUSTER = CCMScyllaCluster(path, cluster_name, **ccm_options)
++                    CCM_CLUSTER.set_configuration_options({'experimental_features': ['udf']})
++                    CCM_CLUSTER.set_configuration_options({"strict_is_not_null_in_views": False})
++                else:
++                    ccm_cluster_clz = CCMCluster if Version(cassandra_version) < Version('4.1') else Cassandra41CCMCluster
++                    CCM_CLUSTER = ccm_cluster_clz(path, cluster_name, **ccm_options)
++                    CCM_CLUSTER.set_configuration_options({'start_native_transport': True})
+                 if Version(cassandra_version) >= Version('2.2'):
+                     CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
+                     if Version(cassandra_version) >= Version('3.0'):
+@@ -582,18 +595,22 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+
+                 common.switch_cluster(path, cluster_name)
+                 CCM_CLUSTER.set_configuration_options(configuration_options)
+-                CCM_CLUSTER.populate(nodes, ipformat=ipformat, use_single_interface=use_single_interface)
++                if SCYLLA_VERSION:
++                    CCM_CLUSTER.populate(nodes, ipformat=ipformat)
++                else:
++                    CCM_CLUSTER.populate(nodes, ipformat=ipformat, use_single_interface=use_single_interface)
+
+     try:
+         jvm_args = []
+
+         # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
+
+-        if 'graph' in workloads:
+-            jvm_args += ['-Xms1500M', '-Xmx1500M']
+-        else:
+-            if PROTOCOL_VERSION >= 4:
+-                jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
++        if not SCYLLA_VERSION:
++            if 'graph' in workloads:
++                jvm_args += ['-Xms1500M', '-Xmx1500M']
++            else:
++                if PROTOCOL_VERSION >= 4:
++                    jvm_args = [" -Dcassandra.custom_query_handler_class=org.apache.cassandra.cql3.CustomPayloadMirroringQueryHandler"]
+         if len(workloads) > 0:
+             for node in CCM_CLUSTER.nodes.values():
+                 node.set_workloads(workloads)
+diff --git a/tests/integration/conftest.py b/tests/integration/conftest.py
+index b2eb9a02..7a00d6b1 100644
+--- a/tests/integration/conftest.py
++++ b/tests/integration/conftest.py
+@@ -1,9 +1,25 @@
++import os
++import logging
+ import pytest
+
++from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
++
++from . import CLUSTER_NAME, SINGLE_NODE_CLUSTER_NAME, MULTIDC_CLUSTER_NAME
++from . import path as ccm_path
+ from tests.integration import teardown_package
+
+-@pytest.fixture(scope='session', autouse=True)
+-def setup_and_teardown_packages():
+-    print('setup')
++@pytest.fixture(scope="session", autouse=True)
++def cleanup_clusters():
++
+     yield
+-    teardown_package()
+\ No newline at end of file
++
++    teardown_package()
++
++    if not os.environ.get('DISABLE_CLUSTER_CLEANUP'):
++        for cluster_name in [CLUSTER_NAME, SINGLE_NODE_CLUSTER_NAME, MULTIDC_CLUSTER_NAME]:
++            try:
++                cluster = CCMClusterFactory.load(ccm_path, cluster_name)
++                logging.debug("Using external CCM cluster {0}".format(cluster.name))
++                cluster.clear()
++            except FileNotFoundError:
++                pass
+\ No newline at end of file
+diff --git a/tests/integration/standard/test_authentication_misconfiguration.py b/tests/integration/standard/test_authentication_misconfiguration.py
+index 546141d8..a8cb9396 100644
+--- a/tests/integration/standard/test_authentication_misconfiguration.py
++++ b/tests/integration/standard/test_authentication_misconfiguration.py
+@@ -19,6 +19,12 @@ from tests.integration import USE_CASS_EXTERNAL, use_cluster, TestCluster
+ 
+ class MisconfiguredAuthenticationTests(unittest.TestCase):
+     """ One node (not the contact point) has password auth. The rest of the nodes have no auth """
++    # TODO: 	Fix ccm to apply following options to scylla.yaml
++    # 	node3.set_configuration_options(values={
++    # 	'authenticator': 'PasswordAuthenticator',
++    # 	'authorizer': 'CassandraAuthorizer',
++    # 	})
++    # To make it working for scylla
+     @classmethod
+     def setUpClass(cls):
+         if not USE_CASS_EXTERNAL:
+diff --git a/tests/integration/standard/test_custom_cluster.py b/tests/integration/standard/test_custom_cluster.py
+index d0f10d51..d8353ec3 100644
+--- a/tests/integration/standard/test_custom_cluster.py
++++ b/tests/integration/standard/test_custom_cluster.py
+@@ -26,7 +26,7 @@ def setup_module():
+     config_options = {'native_transport_port': 9046}
+     ccm_cluster.set_configuration_options(config_options)
+     # can't use wait_for_binary_proto cause ccm tries on port 9042
+-    ccm_cluster.start(wait_for_binary_proto=False)
++    ccm_cluster.start(wait_for_binary_proto=True)
+     # wait until all nodes are up
+     wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.1'], port=9046).connect().shutdown(), 1, 20)
+     wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.2'], port=9046).connect().shutdown(), 1, 20)
+diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
+index 3534f29f..96977d40 100644
+--- a/tests/integration/standard/test_metadata.py
++++ b/tests/integration/standard/test_metadata.py
+@@ -2078,7 +2078,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+ 
+         @test_category metadata
+         """
+-        self.assertIn("SizeTieredCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
++        self.assertIn(self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"], ["SizeTieredCompactionStrategy", "IncrementalCompactionStrategy"])
+ 
+         self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
+         self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+index a643b19c..bbde2aff 100644
+--- a/tests/integration/standard/test_prepared_statements.py
++++ b/tests/integration/standard/test_prepared_statements.py
+@@ -168,7 +168,7 @@ class PreparedStatementTests(unittest.TestCase):
+     def _run_too_many_bind_values(self, session):
+         statement_to_prepare = """ INSERT INTO test3rf.test (v) VALUES  (?)"""
+          # logic needed work with changes in CASSANDRA-6237
+-        if self.cass_version[0] >= (3, 0, 0):
++        if self.cass_version[0] >= (2, 2, 8):
+             self.assertRaises(InvalidRequest, session.prepare, statement_to_prepare)
+         else:
+             prepared = session.prepare(statement_to_prepare)
