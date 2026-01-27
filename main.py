@@ -87,7 +87,7 @@ def get_arguments() -> argparse.Namespace:
     parser.add_argument('scylla_install_dir',
                         help='folder with scylla installation, e.g. a checked out git scylla has been built',
                         nargs='?', default='')
-    parser.add_argument('--driver-type', help='Type of python-driver ("scylla", "cassandra" or "datastax")',
+    parser.add_argument('--driver-type', help='Type of python-driver ("scylla", "cassandra" or "apache")',
                         dest='driver_type')
     parser.add_argument('--versions', default="2", type=str,
                         help="python-driver versions to test\n"
