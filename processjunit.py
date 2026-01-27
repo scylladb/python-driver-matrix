@@ -84,7 +84,7 @@ class ProcessJUnit:
         runs).
         :param driver_version: The python-driver tag (Example: 3.25.0-scylla or 3.25.0)
         :param protocol: The cqlsh native protocol number
-        :param python_driver_type: The driver type - can be "scylla" or "datastax"
+        :param python_driver_type: The driver type - can be "scylla" or "apache"
         """
         tree = ElementTree.parse(self._xunit_file).find("testsuite[@name='pytest']")
         new_tree = ElementTree.Element("testsuites")

@@ -10,7 +10,7 @@ pipeline {
 		string(name: 'NODE_X86', defaultValue: 'ec2-fleet-x86', description: 'On which node to run. Useful options: gce-qavpc,gce2-qavpc,gce4-qavpc. packager machines are slower, but could be used:loki,dgccd201,thor,ran,sif,huginn,muninn')
 		//Have defaults:
 		string(name: 'SCYLLA_VERSIONS', defaultValue: '2', description: 'Scylla versions to check. If the value is a number - The newest major tag versions on which the tests will run (example: 3.25.1, 3.25.0, 3.24.8, and 3.24.7 - the versions chosen were 3.25.1 and 3.24.8) otherwise, the user needs to write the versions as a string with a comma (example:"3.25.1,3.24.1,3.24.3" or "3.25.1")')
-		string(name: 'DATASTAX_VERSIONS', defaultValue: '2', description: 'Datastax versions to check.  If the value is a number - The newest major tag versions on which the tests will run (example: 3.25.1, 3.25.0, 3.24.8, and 3.24.7 - the versions chosen were 3.25.1 and 3.24.8) otherwise, the user needs to write the versions as a string with a comma (example:"3.25.1,3.24.1,3.24.3" or "3.25.1")')
+		string(name: 'APACHE_VERSIONS', defaultValue: '2', description: 'Apache versions to check.  If the value is a number - The newest major tag versions on which the tests will run (example: 3.25.1, 3.25.0, 3.24.8, and 3.24.7 - the versions chosen were 3.25.1 and 3.24.8) otherwise, the user needs to write the versions as a string with a comma (example:"3.25.1,3.24.1,3.24.3" or "3.25.1")')
 		string(name: 'PROTOCOLS', defaultValue: '3,4', description: 'CQL binary protocols v3, v4. i.e. 3,4')
 		string(name: 'MAPPED_SCYLLA_VERSION', defaultValue: '3.1', description: '')
 		string(name: 'ARTIFACT_SOURCE_JOB_NAME', defaultValue: '', description: 'Build path to take artifacts from (usually next or build). Use this with ARTIFACT_SOURCE_BUILD_NUM to get reloc from jenkins, or ARTIFACT_WEB_URL to take them from cloud.')
@@ -23,8 +23,8 @@ pipeline {
 		string(name: 'PYTHON_DRIVER_MATRIX_BRANCH', defaultValue: '', description: 'git branch or sha for Python driver matrix. i.e. branch-3.1. master or a sha')
 		string(name: 'SCYLLA_PYTHON_DRIVER_REPO', defaultValue: 'https://github.com/scylladb/python-driver.git', description: 'git repo of Scylla python-driver')
 		string(name: 'SCYLLA_PYTHON_BRANCH', defaultValue: 'master', description: 'Branch of Scylla python-driver repo')
-		string(name: 'DATASTAX_PYTHON_DRIVER_REPO', defaultValue: 'https://github.com/datastax/python-driver.git', description: 'git repo of Datastax python-driver')
-		string(name: 'DATASTAX_PYTHON_BRANCH', defaultValue: 'master', description: 'Branch of Datastax python-driver repo')
+		string(name: 'APACHE_PYTHON_DRIVER_REPO', defaultValue: 'https://github.com/apache/cassandra-python-driver.git', description: 'git repo of Apache python-driver')
+		string(name: 'APACHE_PYTHON_BRANCH', defaultValue: 'trunk', description: 'Branch of Apache python-driver repo')
 		string(name: 'EMAIL_ADDRESS', defaultValue: 'qa@scylladb.com', description: 'The email address to send the report. If empty - will take qa@scylladb.com')
 		booleanParam(name: 'DRY_RUN', defaultValue: false, description: 'Set to test the pipeline code')
 		booleanParam(name: 'DEBUG_MAIL', defaultValue: false, description: 'Set to send mails to requester only')
@@ -76,7 +76,7 @@ pipeline {
 
 					artifactSourceJob = params.ARTIFACT_SOURCE_JOB_NAME ?: "${branchProperties.calledBuildsDir}${branchProperties.buildJobName}"
 					buildMode = "release"
-					pythonDriverDatastaxCheckoutDir = "python-driver-datastax"
+					pythonDriverApacheCheckoutDir = "python-driver-apache"
 					pythonDriverScyllaCheckoutDir = "python-driver-scylla"
 					artifactSourceJobNum = params.ARTIFACT_SOURCE_BUILD_NUM ?: Jenkins.instance.getItemByFullName(artifactSourceJob).lastSuccessfulBuild.number.toString()
 					paramArtifactWebUrl = params.ARTIFACT_WEB_URL ?: "latest"
@@ -113,7 +113,7 @@ pipeline {
                     git.checkoutToDir (gitProperties.scyllaPkgRepoUrl, branchProperties.stableBranchName, gitProperties.scyllaPkgCheckoutDir)
 					git.checkoutToDir (pythonDriverMatrixRepoUrl, pythonDriverMatrixBranch, gitProperties.pythonDriverMatrixCheckoutDir)
 					git.checkoutToDir (gitProperties.scyllaCcmRepoUrl, ccmBranch, gitProperties.scyllaCcmCheckoutDir)
-					git.checkoutToDir (params.DATASTAX_PYTHON_DRIVER_REPO, params.DATASTAX_PYTHON_BRANCH, pythonDriverDatastaxCheckoutDir)
+					git.checkoutToDir (params.APACHE_PYTHON_DRIVER_REPO, params.APACHE_PYTHON_BRANCH, pythonDriverApacheCheckoutDir)
 					git.checkoutToDir (params.SCYLLA_PYTHON_DRIVER_REPO, params.SCYLLA_PYTHON_BRANCH, pythonDriverScyllaCheckoutDir)
 					general.lsPath(WORKSPACE)
 				}
@@ -132,16 +132,16 @@ pipeline {
 			}
 		}
 
-		stage('Python Driver Matrix Test(datastax)') {
+		stage('Python Driver Matrix Test(apache)') {
 			steps {
 				catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
 					script {
 						test.doPythonDriverMatrixTest(
 							dryRun: params.DRY_RUN,
-							pythonDriverScyllaOrDatastaxCheckoutDir: "$WORKSPACE/$pythonDriverDatastaxCheckoutDir",
+							pythonDriverScyllaOrApacheCheckoutDir: "$WORKSPACE/$pythonDriverApacheCheckoutDir",
 							pythonDriverMatrixCheckoutDir: "$WORKSPACE/$gitProperties.pythonDriverMatrixCheckoutDir",
-							driverType: "datastax",
-							pythonDriverVersions: params.DATASTAX_VERSIONS,
+							driverType: "apache",
+							pythonDriverVersions: params.APACHE_VERSIONS,
 							cqlBinaryProtocols: params.PROTOCOLS,
 							architecture: generalProperties.x86ArchName,
 							email_recipients: params.EMAIL_ADDRESS,
@@ -158,7 +158,7 @@ pipeline {
 					script {
 						test.doPythonDriverMatrixTest(
 							dryRun: params.DRY_RUN,
-							pythonDriverScyllaOrDatastaxCheckoutDir: "$WORKSPACE/$pythonDriverScyllaCheckoutDir",
+							pythonDriverScyllaOrApacheCheckoutDir: "$WORKSPACE/$pythonDriverScyllaCheckoutDir",
 							pythonDriverMatrixCheckoutDir: "$WORKSPACE/$gitProperties.pythonDriverMatrixCheckoutDir",
 							driverType: "scylla",
 							pythonDriverVersions: params.SCYLLA_VERSIONS,

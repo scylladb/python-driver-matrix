@@ -5,7 +5,7 @@
 * pip
 * docker
 * git
-* OpenJDK 8 
+* OpenJDK 8
 
 #### Installing dependencies
 Following commands will install all project dependencies using [Pipenv](https:/e/pipenv.readthedocs.io/en/latest/)
@@ -32,7 +32,7 @@ Following commands will install all project dependencies using [Pipenv](https:/e
 ##### Repositories dependencies
 All repositories should be under the **same base folder**
 ```bash
-  git clone git@github.com:datastax/python-driver.git datastax-python-driver &
+  git clone git@github.com:apache/cassandra-python-driver.git apache-python-driver &
   git clone git@github.com:scylladb/python-driver.git scylla-python-driver &
   git clone git@github.com:scylladb/scylla.git scylla &
   git clone git@github.com:scylladb/scylla-ccm.git scylla-ccm &
@@ -43,7 +43,7 @@ All repositories should be under the **same base folder**
 ## Running locally
 
 * Execute the main.py wrapper like:
-  * Running with scylla-python-driver: 
+  * Running with scylla-python-driver:
     * Scylla driver:
       ```bash
       # Run all standard tests on latest python-driver tag (--versions 1)
@@ -52,15 +52,15 @@ All repositories should be under the **same base folder**
       # Run all standard tests with specific python-driver tag (--versions 3.25.0-scylla)
       python3 main.py ../scylla-python-driver ../scylla --tests tests.integration.standard --driver-type scylla --versions 3.25.0-scylla --protocols 3,4
       ```
-    * Datastax driver:
+    * Apache driver:
       ```bash
       # Run all standard tests on latest python-driver tag (--versions 1)
-      python3 main.py ../datastax-python-driver ../scylla --tests tests.integration.standard --driver-type datastax --versions 1 --protocols 3,4
+      python3 main.py ../apache-python-driver ../scylla --tests tests.integration.standard --driver-type apache --versions 1 --protocols 3,4
 
       # Run all standard tests with specific python-driver tag (--versions 3.25.0)
-      python3 main.py ../datastax-python-driver ../scylla --tests tests.integration.standard --driver-type datastax --versions 3.25.0-scylla --protocols 3,4
+      python3 main.py ../apache-python-driver ../scylla --tests tests.integration.standard --driver-type apache --versions 3.25.0-scylla --protocols 3,4
       ```
-  * Running with docker image: 
+  * Running with docker image:
     * Scylla driver:
       ```bash
       export INSTALL_DIRECTORY=../scylla
@@ -69,13 +69,13 @@ All repositories should be under the **same base folder**
       # export CASSANDRA_DIR=../scylla/build/debug
       ./scripts/run_test.sh python main.py ../scylla-python-driver $INSTALL_DIRECTORY --tests tests.integration.standard --driver-type scylla --versions 3.25.0 --protocol 3,4
       ```
-    * Datastax driver:
+    * Apache driver:
       ```bash
       export INSTALL_DIRECTORY=../scylla
 
       # running with anything other then release, this should be added
       # export CASSANDRA_DIR=../scylla/build/debug
-      ./scripts/run_test.sh python main.py ../datastax-python-driver $INSTALL_DIRECTORY --tests tests.integration.standard --driver-type datastax --versions 3.25.0 --protocol 3,4
+      ./scripts/run_test.sh python main.py ../apache-python-driver $INSTALL_DIRECTORY --tests tests.integration.standard --driver-type apache --versions 3.25.0 --protocol 3,4
       ```
   * Running with relocatable packages:
     * Scylla driver:
@@ -83,10 +83,10 @@ All repositories should be under the **same base folder**
       export SCYLLA_VERSION=unstable/master:2021-12-16T09:10:53Z
       ./scripts/run_test.sh python main.py ../scylla-python-driver --tests tests.integration.standard --driver-type scylla --versions 3.25.0 --protocol 3,4 --scylla-version $SCYLLA_VERSION
       ```
-    * Datastax driver:
+    * Apache driver:
       ```bash
       export SCYLLA_VERSION=unstable/master:2021-12-16T09:10:53Z
-      ./scripts/run_test.sh python main.py ../datastax-python-driver --tests tests.integration.standard --driver-type datastax --versions 3.25.0 --protocol 3,4 --scylla-version $SCYLLA_VERSION
+      ./scripts/run_test.sh python main.py ../apache-python-driver --tests tests.integration.standard --driver-type apache --versions 3.25.0 --protocol 3,4 --scylla-version $SCYLLA_VERSION
       ```
     export SCYLLA_VERSION=unstable/master:265
     ./scripts/run_test.sh python main.py ../python-driver --tests tests.integration.standard --versions 3.9.0 --protocol 3 --scylla-version $SCYLLA_VERSION

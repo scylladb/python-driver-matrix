@@ -45,9 +45,9 @@ def doPythonDriverMatrixTest (Map args) {
 	// Run the Python test upon different repos
 	// Parameters:
 	// boolean (default false): dryRun - Run builds on dry run (that will show commands instead of really run them).
-	// string (mandatory): pythonDriverScyllaOrDatastaxCheckoutDir - Scylla or datastax checkout dir
+	// string (mandatory): pythonDriverScyllaOrApacheCheckoutDir - Scylla or apache checkout dir
 	// string (mandatory): pythonDriverMatrixCheckoutDir - The general python driver matrix dir
-	// String (mandatory): driverType - scylla || datastax
+	// String (mandatory): driverType - scylla || apache
 	// String (mandatory): pythonDriverVersions - Python driver versions to check
 	// String (mandatory): cqlBinaryProtocols - CQL Binary Protocols
 	// String (default: x86_64): architecture Which architecture to publish x86_64|aarch64
@@ -55,7 +55,7 @@ def doPythonDriverMatrixTest (Map args) {
 
 	general.traceFunctionParams ("test.doPythonDriverMatrixTest", args)
 	general.errorMissingMandatoryParam ("test.doPythonDriverMatrixTest",
-		[pythonDriverScyllaOrDatastaxCheckoutDir: "$args.pythonDriverScyllaOrDatastaxCheckoutDir",
+		[pythonDriverScyllaOrApacheCheckoutDir: "$args.pythonDriverScyllaOrApacheCheckoutDir",
 		 pythonDriverMatrixCheckoutDir: "$args.pythonDriverMatrixCheckoutDir",
  		 cqlBinaryProtocols: "$args.cqlBinaryProtocols",
 		 driverType: "$args.driverType",
@@ -66,7 +66,7 @@ def doPythonDriverMatrixTest (Map args) {
 	String architecture = args.architecture ?: generalProperties.x86ArchName
 
 	setupTestEnv("release", architecture, dryRun, args.scyllaVersion, args.scyllaRelease)
-	String pythonParams = "python3 main.py $args.pythonDriverScyllaOrDatastaxCheckoutDir"
+	String pythonParams = "python3 main.py $args.pythonDriverScyllaOrApacheCheckoutDir"
 	pythonParams += " --driver-type $args.driverType"
 	pythonParams += " --tests tests/integration/standard"
 	pythonParams += " --versions $args.pythonDriverVersions"
