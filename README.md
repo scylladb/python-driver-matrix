@@ -3,12 +3,13 @@
 ## Prerequisites
 * Python3.8
 * pip
+* uv
 * docker
 * git
 * OpenJDK 8
 
 #### Installing dependencies
-Following commands will install all project dependencies using [Pipenv](https:/e/pipenv.readthedocs.io/en/latest/)
+Following commands will install all project dependencies using [uv](https://github.com/astral-sh/uv)
 
 
 * Updates the package sources list
@@ -19,9 +20,9 @@ Following commands will install all project dependencies using [Pipenv](https:/e
   ```bash
   sudo apt-get install -y git-all
   ```
-* `pip` install
+* `uv` install (recommended)
   ```bash
-  sudo apt-get install -y python3-pip
+  curl -LsSf https://astral.sh/uv/install.sh | sh
   ```
 * `python` imported packages (Please note that the default `Python` version should be `3.8`)
    ```bash

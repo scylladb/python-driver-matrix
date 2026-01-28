@@ -100,6 +100,13 @@ class Run:
             result["SCYLLA_VERSION"] = self._scylla_version
         else:
             result["INSTALL_DIRECTORY"] = self._scylla_install_dir
+
+        # Add UV to PATH if using Scylla driver
+        if self._python_driver_type == "scylla":
+            home_dir = os.path.expanduser("~")
+            uv_bin_path = f"{home_dir}/.local/bin"
+            result["PATH"] = f"{uv_bin_path}:{result.get('PATH', os.environ.get('PATH', ''))}"
+
         return result
 
     def _run_command_in_shell(self, cmd: str):
@@ -143,11 +150,12 @@ class Run:
 
         logging.info("Creating a new python venv in directory '%s'", self._venv_path)
         self._venv_path.mkdir(parents=True)
-        self._run_command_in_shell(cmd=f"python3 -m venv {self._venv_path}")
-        logging.info("Upgrading 'pip' and 'setuptools' packages to the latest version")
-        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && pip install --upgrade pip setuptools")
+        prefix = ""
+        if self._python_driver_type == "scylla":
+            prefix = "uv "
+        self._run_command_in_shell(cmd=f"{prefix}venv {self._venv_path}")
         logging.info("Installing the following packages:\n%s", "\n".join(basic_packages))
-        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && pip install {' '.join(basic_packages)}")
+        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && {prefix}pip install {' '.join(basic_packages)}")
 
     @lru_cache(maxsize=None)
     def _activate_venv_cmd(self):
@@ -158,6 +166,12 @@ class Run:
         if os.environ.get("DEV_MODE", False) and self._venv_path.exists() and self._venv_path.is_dir():
             return True
         try:
+            if self._python_driver_type == "scylla":
+                # Install UV if not already installed
+                uv_path = os.path.expanduser("~/.local/bin/uv")
+                if not os.path.exists(uv_path):
+                    logging.info("Installing UV package manager")
+                    self._run_command_in_shell("curl -LsSf https://astral.sh/uv/install.sh | sh")
             self._create_venv()
             for requirement_file in ["requirements.txt", "test-requirements.txt"]:
                 if os.path.exists(requirement_file):
@@ -200,9 +214,14 @@ class Run:
         logging.info("Changing the current working directory to the '%s' path", self._python_driver_git)
         os.chdir(self._python_driver_git)
         if self._checkout_branch() and self._apply_patch_files() and self._install_python_requirements():
-            self._run_command_in_shell(f"{self._activate_venv_cmd()} && pip install -e .")
+            prefix = ""
+            if self._python_driver_type == "scylla":
+                prefix = "uv "
+            self._run_command_in_shell(f"{self._activate_venv_cmd()} && {prefix}pip install -e .")
             debug = '--log-cli-level=debug' if os.environ.get("DEV_MODE") else ''
-            pytest_cmd = f"pytest -vvv {debug} -rxXs --junitxml={self.xunit_file} -o junit_family=xunit2 -s {self._tests}"
+            if self._python_driver_type == "scylla":
+                prefix = "uv run "
+            pytest_cmd = f"{prefix}pytest -vvv {debug} -rxXs --junitxml={self.xunit_file} -o junit_family=xunit2 -s {self._tests}"
             if self._collect_only:
                 pytest_cmd += " --collect-only"
             subprocess.call(f"{self._activate_venv_cmd()} && {pytest_cmd} -qq", shell=True, executable="/bin/bash",
