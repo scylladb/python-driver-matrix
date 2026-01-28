@@ -150,12 +150,15 @@ class Run:
 
         logging.info("Creating a new python venv in directory '%s'", self._venv_path)
         self._venv_path.mkdir(parents=True)
-        prefix = ""
         if self._python_driver_type == "scylla":
-            prefix = "uv "
-        self._run_command_in_shell(cmd=f"{prefix}venv {self._venv_path}")
+            venv_cmd = f"uv venv {self._venv_path}"
+            pip_prefix = "uv "
+        else:
+            venv_cmd = f"python3 -m venv {self._venv_path}"
+            pip_prefix = ""
+        self._run_command_in_shell(cmd=venv_cmd)
         logging.info("Installing the following packages:\n%s", "\n".join(basic_packages))
-        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && {prefix}pip install {' '.join(basic_packages)}")
+        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && {pip_prefix}pip install {' '.join(basic_packages)}")
 
     @lru_cache(maxsize=None)
     def _activate_venv_cmd(self):
