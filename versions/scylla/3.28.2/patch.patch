@@ -1,0 +1,329 @@
+diff --git a/tests/integration/standard/test_cluster.py b/tests/integration/standard/test_cluster.py
+index a0354982..d7f89ad5 100644
+--- a/tests/integration/standard/test_cluster.py
++++ b/tests/integration/standard/test_cluster.py
+@@ -17,13 +17,14 @@ import unittest
+
+ from collections import deque
+ from copy import copy
+-from mock import Mock, call, patch
++from unittest.mock import Mock, patch
+ import time
+ from uuid import uuid4
+ import logging
+ import warnings
+ from packaging.version import Version
+ import os
++import pytest
+
+ import cassandra
+ from cassandra.cluster import NoHostAvailable, ExecutionProfile, EXEC_PROFILE_DEFAULT, ControlConnection, Cluster
+diff --git a/tests/integration/standard/test_scylla_cloud.py b/tests/integration/standard/test_scylla_cloud.py
+deleted file mode 100644
+index d1a22f88..00000000
+--- a/tests/integration/standard/test_scylla_cloud.py
++++ /dev/null
+@@ -1,93 +0,0 @@
+-import logging
+-import os.path
+-from unittest import TestCase
+-from ccmlib.utils.ssl_utils import generate_ssl_stores
+-from ccmlib.utils.sni_proxy import refresh_certs, get_cluster_info, start_sni_proxy, create_cloud_config
+-
+-from tests.integration import use_cluster
+-from cassandra.cluster import Cluster, TwistedConnection
+-
+-
+-from cassandra.io.libevreactor import LibevConnection
+-supported_connection_classes = [LibevConnection, TwistedConnection]
+-try:
+-    from cassandra.io.asyncorereactor import AsyncoreConnection
+-    supported_connection_classes += [AsyncoreConnection]
+-except ImportError:
+-    pass
+-
+-#from cassandra.io.geventreactor import GeventConnection
+-#from cassandra.io.eventletreactor import EventletConnection
+-#from cassandra.io.asyncioreactor import AsyncioConnection
+-
+-# need to run them with specific configuration like `gevent.monkey.patch_all()` or under async functions
+-# unsupported_connection_classes = [GeventConnection, AsyncioConnection, EventletConnection]
+-
+-
+-class ScyllaCloudConfigTests(TestCase):
+-    def start_cluster_with_proxy(self):
+-        ccm_cluster = self.ccm_cluster
+-        generate_ssl_stores(ccm_cluster.get_path())
+-        ssl_port = 9142
+-        sni_port = 443
+-        ccm_cluster.set_configuration_options(dict(
+-            client_encryption_options=
+-            dict(require_client_auth=True,
+-                 truststore=os.path.join(ccm_cluster.get_path(), 'ccm_node.cer'),
+-                 certificate=os.path.join(ccm_cluster.get_path(), 'ccm_node.pem'),
+-                 keyfile=os.path.join(ccm_cluster.get_path(), 'ccm_node.key'),
+-                 enabled=True),
+-            native_transport_port_ssl=ssl_port))
+-
+-        ccm_cluster._update_config()
+-
+-        ccm_cluster.start(wait_for_binary_proto=True, wait_other_notice=True)
+-
+-        nodes_info = get_cluster_info(ccm_cluster, port=ssl_port)
+-        refresh_certs(ccm_cluster, nodes_info)
+-
+-        docker_id, listen_address, listen_port = \
+-            start_sni_proxy(ccm_cluster.get_path(), nodes_info=nodes_info, listen_port=sni_port)
+-        ccm_cluster.sni_proxy_docker_ids = [docker_id]
+-        ccm_cluster.sni_proxy_listen_port = listen_port
+-        ccm_cluster._update_config()
+-
+-        config_data_yaml, config_path_yaml = create_cloud_config(ccm_cluster.get_path(),
+-                                                                 port=listen_port, address=listen_address,
+-                                                                 nodes_info=nodes_info)
+-        return config_data_yaml, config_path_yaml
+-
+-    def test_1_node_cluster(self):
+-        self.ccm_cluster = use_cluster("sni_proxy", [1], start=False)
+-        config_data_yaml, config_path_yaml = self.start_cluster_with_proxy()
+-
+-        for config in [config_path_yaml, config_data_yaml]:
+-            for connection_class in supported_connection_classes:
+-                logging.warning('testing with class: %s', connection_class.__name__)
+-                cluster = Cluster(scylla_cloud=config, connection_class=connection_class)
+-                try:
+-                    with cluster.connect() as session:
+-                        res = session.execute("SELECT * FROM system.local")
+-                        assert res.all()
+-
+-                        assert len(cluster.metadata._hosts) == 1
+-                        assert len(cluster.metadata._host_id_by_endpoint) == 1
+-                finally:
+-                    cluster.shutdown()
+-
+-    def test_3_node_cluster(self):
+-        self.ccm_cluster = use_cluster("sni_proxy", [3], start=False)
+-        config_data_yaml, config_path_yaml = self.start_cluster_with_proxy()
+-
+-        for config in [config_path_yaml, config_data_yaml]:
+-            for connection_class in supported_connection_classes:
+-                logging.warning('testing with class: %s', connection_class.__name__)
+-                cluster = Cluster(scylla_cloud=config, connection_class=connection_class)
+-                try:
+-                    with cluster.connect() as session:
+-                        res = session.execute("SELECT * FROM system.local")
+-                        assert res.all()
+-                        assert len(cluster.metadata._hosts) == 3
+-                        assert len(cluster.metadata._host_id_by_endpoint) == 3
+-                finally:
+-                    cluster.shutdown()
+diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
+index a1d4d405..d3ccafd7 100644
+--- a/tests/integration/standard/test_metadata.py
++++ b/tests/integration/standard/test_metadata.py
+@@ -20,8 +20,10 @@ import logging
+ import sys
+ import time
+ import os
++from typing import Optional
++
+ from packaging.version import Version
+-from mock import Mock, patch
++from unittest.mock import Mock, patch
+ import pytest
+
+ from cassandra import AlreadyExists, SignatureDescriptor, UserFunctionDescriptor, UserAggregateDescriptor
+@@ -37,14 +39,15 @@ from cassandra.util import SortedSet
+ from tests.integration import (get_cluster, use_singledc, PROTOCOL_VERSION, execute_until_pass,
+                                BasicSegregatedKeyspaceUnitTestCase, BasicSharedKeyspaceUnitTestCase,
+                                BasicExistingKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster, CASSANDRA_VERSION,
+-                               greaterthanorequaldse51, greaterthanorequalcass30, lessthancass30, local,
++                               greaterthanorequaldse51, greaterthanorequalcass30, lessthancass30, local,
+                                get_supported_protocol_versions, greaterthancass20,
+-                               greaterthancass21, assert_startswith, greaterthanorequalcass40,
+-                               greaterthanorequaldse67, lessthancass40,
+-                               TestCluster, DSE_VERSION, requires_java_udf, requires_composite_type,
+-                               requires_collection_indexes, SCYLLA_VERSION, xfail_scylla, xfail_scylla_version_lt)
++                               greaterthancass21, greaterthanorequalcass40,
++                               greaterthanorequaldse67, lessthancass40,
++                               TestCluster, requires_java_udf, requires_composite_type,
++                               requires_collection_indexes, SCYLLA_VERSION, xfail_scylla, xfail_scylla_version_lt,
++                               requirescompactstorage)
+
+ from tests.util import wait_until
+
+ log = logging.getLogger(__name__)
+
+@@ -428,6 +429,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         self.check_create_statement(tablemeta, create_statement)
+
+     @lessthancass40
++    @requirescompactstorage
+     def test_compact_storage(self):
+         create_statement = self.make_create_statement(["a"], [], ["b"])
+         create_statement += " WITH COMPACT STORAGE"
+@@ -437,6 +439,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         self.check_create_statement(tablemeta, create_statement)
+
+     @lessthancass40
++    @requirescompactstorage
+     def test_dense_compact_storage(self):
+         create_statement = self.make_create_statement(["a"], ["b"], ["c"])
+         create_statement += " WITH COMPACT STORAGE"
+@@ -456,6 +459,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         self.check_create_statement(tablemeta, create_statement)
+
+     @lessthancass40
++    @requirescompactstorage
+     def test_counter_with_compact_storage(self):
+         """ PYTHON-1100 """
+         create_statement = (
+@@ -468,6 +472,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         self.check_create_statement(tablemeta, create_statement)
+
+     @lessthancass40
++    @requirescompactstorage
+     def test_counter_with_dense_compact_storage(self):
+         create_statement = (
+             "CREATE TABLE {keyspace}.{table} ("
+diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
+index 693ce407..edac685d 100644
+--- a/tests/integration/__init__.py
++++ b/tests/integration/__init__.py
+@@ -12,7 +12,9 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+
++import re
+ import os
++from typing import Callable
+ from cassandra.cluster import Cluster
+
+ from tests import connection_class, EVENT_LOOP_MANAGER
+@@ -43,7 +45,6 @@ from cassandra import ProtocolVersion
+
+ try:
+     import ccmlib
+-    from ccmlib.dse_cluster import DseCluster
+     from ccmlib.cluster import Cluster as CCMCluster
+     from ccmlib.scylla_cluster import ScyllaCluster as CCMScyllaCluster
+     from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
+@@ -87,7 +88,7 @@ def get_server_versions():
+
+     c = TestCluster()
+     s = c.connect()
+-    row = s.execute('SELECT cql_version, release_version FROM system.local').one()
++    row = s.execute("SELECT cql_version, release_version FROM system.local WHERE key='local'").one()
+
+     cass_version = _tuple_version(row.release_version)
+     cql_version = _tuple_version(row.cql_version)
+@@ -351,12 +259,19 @@ def local_decorator_creator():
+
+     return _id_and_mark
+
++def xfail_scylla_version(filter: Callable[[Version], bool], reason: str, *args, **kwargs):
++    if SCYLLA_VERSION is None:
++        return pytest.mark.skipif(False, reason="It is just a NoOP Decor, should not skip anything")
++    current_version = Version(get_scylla_version(SCYLLA_VERSION))
++
++    return pytest.mark.xfail(filter(current_version), reason=reason, *args, **kwargs)
++
+ local = local_decorator_creator()
+ notprotocolv1 = unittest.skipUnless(PROTOCOL_VERSION > 1, 'Protocol v1 not supported')
+ lessthenprotocolv4 = unittest.skipUnless(PROTOCOL_VERSION < 4, 'Protocol versions 4 or greater not supported')
+ lessthanprotocolv3 = unittest.skipUnless(PROTOCOL_VERSION < 3, 'Protocol versions 3 or greater not supported')
+ greaterthanprotocolv3 = unittest.skipUnless(PROTOCOL_VERSION >= 4, 'Protocol versions less than 4 are not supported')
+ protocolv6 = unittest.skipUnless(6 in get_supported_protocol_versions(), 'Protocol versions less than 6 are not supported')
+
+ greaterthancass20 = unittest.skipUnless(CASSANDRA_VERSION >= Version('2.1'), 'Cassandra version 2.1 or greater required')
+ greaterthancass21 = unittest.skipUnless(CASSANDRA_VERSION >= Version('2.2'), 'Cassandra version 2.2 or greater required')
+@@ -399,11 +304,10 @@ pypy = unittest.skipUnless(platform.python_implementation() == "PyPy", "Test is
+ requiresmallclockgranularity = unittest.skipIf("Windows" in platform.system() or "asyncore" in EVENT_LOOP_MANAGER,
+                                                "This test is not suitible for environments with large clock granularity")
+ requiressimulacron = unittest.skipIf(SIMULACRON_JAR is None or CASSANDRA_VERSION < Version("2.1"), "Simulacron jar hasn't been specified or C* version is 2.0")
+ requirecassandra = unittest.skipIf(DSE_VERSION, "Cassandra required")
+ notdse = unittest.skipIf(DSE_VERSION, "DSE not supported")
+-requiredse = unittest.skipUnless(DSE_VERSION, "DSE required")
++requiredse = unittest.skipUnless(DSE_VERSION, "DSE required")
+-requirescloudproxy = unittest.skipIf(CLOUD_PROXY_PATH is None, "Cloud Proxy path hasn't been specified")
+-
++requirescompactstorage = xfail_scylla_version(lambda v: v >= Version('2025.1.0'), reason="ScyllaDB deprecated compact storage", raises=InvalidRequest)
+ libevtest = unittest.skipUnless(EVENT_LOOP_MANAGER=="libev", "Test timing designed for libev loop")
+
+ def wait_for_node_socket(node, timeout):
+diff --git a/tests/integration/standard/test_custom_protocol_handler.py b/tests/integration/standard/test_custom_protocol_handler.py
+index 9d9f90e6..239f7e73 100644
+--- a/tests/integration/standard/test_custom_protocol_handler.py
++++ b/tests/integration/standard/test_custom_protocol_handler.py
+@@ -21,13 +21,14 @@ from cassandra.cluster import (ResponseFuture, ExecutionProfile, EXEC_PROFILE_DE
+ from cassandra import ProtocolVersion, ConsistencyLevel
+
+ from tests.integration import use_singledc, drop_keyspace_shutdown_cluster, \
+-    greaterthanorequalcass30, execute_with_long_wait_retry, greaterthanorequaldse51, greaterthanorequalcass3_10, \
+-    TestCluster, greaterthanorequalcass40, requirecassandra
++    greaterthanorequalcass30, execute_with_long_wait_retry, greaterthanorequaldse51, greaterthanorequalcass3_10, \
++    TestCluster, greaterthanorequalcass40, requirecassandra
+ from tests.integration.datatype_utils import update_datatypes, PRIMITIVE_DATATYPES
+ from tests.integration.standard.utils import create_table_with_all_types, get_all_primitive_params
+
+ import uuid
+-import mock
++from unittest import mock
++import pytest
+
+
+ def setup_module():
+diff --git a/tests/unit/cqlengine/test_connection.py b/tests/unit/cqlengine/test_connection.py
+index 56136b6e..9bce715f 100644
+--- a/tests/unit/cqlengine/test_connection.py
++++ b/tests/unit/cqlengine/test_connection.py
+@@ -13,12 +13,12 @@
+ # limitations under the License.
+
+ import unittest
++from unittest.mock import Mock
+
+ from cassandra.cluster import _ConfigMode
+ from cassandra.cqlengine import connection
+ from cassandra.query import dict_factory
+-
+-from mock import Mock
++import pytest
+
+
+ class ConnectionTest(unittest.TestCase):
+diff --git a/tests/integration/standard/test_query.py b/tests/integration/standard/test_query.py
+index a2954db2..a3bdf8a7 100644
+--- a/tests/integration/standard/test_query.py
++++ b/tests/integration/standard/test_query.py
+@@ -26,15 +26,15 @@ from cassandra.cluster import NoHostAvailable, ExecutionProfile, EXEC_PROFILE_DE
+ from cassandra.policies import HostDistance, RoundRobinPolicy, WhiteListRoundRobinPolicy
+ from tests.integration import use_singledc, PROTOCOL_VERSION, BasicSharedKeyspaceUnitTestCase, \
+     greaterthanprotocolv3, MockLoggingHandler, get_supported_protocol_versions, local, get_cluster, setup_keyspace, \
+-    USE_CASS_EXTERNAL, greaterthanorequalcass40, DSE_VERSION, TestCluster, requirecassandra, xfail_scylla
++    USE_CASS_EXTERNAL, greaterthanorequalcass40, TestCluster, xfail_scylla,requirecassandra
+ from tests import notwindows
+ from tests.integration import greaterthanorequalcass30, get_node
+
+ import time
+ import random
+ import re
+
+-import mock
++from unittest import mock
+
+
+ log = logging.getLogger(__name__)
+diff --git a/tests/integration/standard/test_use_keyspace.py b/tests/integration/standard/test_use_keyspace.py
+index 42cf03a5..72ddbf9e 100644
+--- a/tests/integration/standard/test_use_keyspace.py
++++ b/tests/integration/standard/test_use_keyspace.py
+@@ -7,7 +7,7 @@ try:
+ except ImportError:
+     import unittest  # noqa
+
+-from mock import patch
++from unittest.mock import patch
+
+ from cassandra.connection import Connection
+ from cassandra.cluster import Cluster
