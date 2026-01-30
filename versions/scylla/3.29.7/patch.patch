@@ -52,3 +52,16 @@ index edac685d..b4eab358 100644
 
      if not isinstance(ent_scylla_version, str):
          raise ValueError('ent_scylla_version should be a str')
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+index e6f86d83..3f63b881 100644
+--- a/tests/integration/standard/test_prepared_statements.py
++++ b/tests/integration/standard/test_prepared_statements.py
+@@ -44,7 +44,7 @@ class PreparedStatementTests(unittest.TestCase):
+         cls.cass_version = get_server_versions()
+
+     def setUp(self):
+-        self.cluster = TestCluster(metrics_enabled=True, allow_beta_protocol_version=True)
++        self.cluster = TestCluster(metrics_enabled=True, allow_beta_protocol_version=True, protocol_version=PROTOCOL_VERSION)
+         self.session = self.cluster.connect()
+
+     def tearDown(self):
