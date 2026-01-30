@@ -327,3 +327,28 @@ index 42cf03a5..72ddbf9e 100644
 
  from cassandra.connection import Connection
  from cassandra.cluster import Cluster
+diff --git a/tests/integration/standard/test_connection.py b/tests/integration/standard/test_connection.py
+index 4d388ed2..630e5e6b 100644
+--- a/tests/integration/standard/test_connection.py
++++ b/tests/integration/standard/test_connection.py
+@@ -15,6 +15,6 @@
+ import unittest
+
+ from functools import partial
+-from mock import patch
++from unittest.mock import patch
+ import logging
+ import sys
+diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
+index 5ccc0732..3f63b881 100644
+--- a/tests/integration/standard/test_prepared_statements.py
++++ b/tests/integration/standard/test_prepared_statements.py
+@@ -43,7 +44,7 @@ class PreparedStatementTests(unittest.TestCase):
+         cls.cass_version = get_server_versions()
+
+     def setUp(self):
+-        self.cluster = TestCluster(metrics_enabled=True, allow_beta_protocol_version=True)
++        self.cluster = TestCluster(metrics_enabled=True, allow_beta_protocol_version=True, protocol_version=PROTOCOL_VERSION)
+         self.session = self.cluster.connect()
+
+     def tearDown(self):
