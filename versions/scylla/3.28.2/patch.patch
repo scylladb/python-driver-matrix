@@ -327,3 +327,15 @@ index 42cf03a5..72ddbf9e 100644
 
  from cassandra.connection import Connection
  from cassandra.cluster import Cluster
+diff --git a/tests/integration/standard/test_connection.py b/tests/integration/standard/test_connection.py
+index 4d388ed2..630e5e6b 100644
+--- a/tests/integration/standard/test_connection.py
++++ b/tests/integration/standard/test_connection.py
+@@ -15,6 +15,6 @@
+ import unittest
+
+ from functools import partial
+-from mock import patch
++from unittest.mock import patch
+ import logging
+ import sys
