@@ -186,6 +186,15 @@ index a1d4d405..d3ccafd7 100644
      def test_counter_with_dense_compact_storage(self):
          create_statement = (
              "CREATE TABLE {keyspace}.{table} ("
+@@ -2171,7 +2163,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+
+         @test_category metadata
+         """
+-        self.assertIn("SizeTieredCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
++        self.assertIn(self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"], ["SizeTieredCompactionStrategy"])
+
+         self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
+         self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
 index 693ce407..edac685d 100644
 --- a/tests/integration/__init__.py
