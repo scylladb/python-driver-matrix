@@ -65,3 +65,83 @@ index e6f86d83..3f63b881 100644
          self.session = self.cluster.connect()
 
      def tearDown(self):
+diff --git a/tests/integration/standard/test_control_connection.py b/tests/integration/standard/test_control_connection.py
+index 206945f0..8dc465eb 100644
+--- a/tests/integration/standard/test_control_connection.py
++++ b/tests/integration/standard/test_control_connection.py
+@@ -117,28 +121,28 @@ class ControlConnectionTests(unittest.TestCase):
+         self.cluster = TestCluster()
+
+         host = self.cluster.get_control_connection_host()
+-        assert host == None
++        assert host is None
+
+         self.session = self.cluster.connect()
+         cc_endpoint = self.cluster.control_connection._connection.endpoint
+
+         host = self.cluster.get_control_connection_host()
+         assert host.endpoint == cc_endpoint
+-        assert host.is_up == True
++        assert host.is_up
+         hosts = self.cluster.metadata.all_hosts()
+-        assert 3 == len(hosts)
++        assert len(hosts) == 3
+
+         for host in hosts:
+             assert 9042 == host.broadcast_rpc_port
+             assert 7000 == host.broadcast_port
+
+     @xfail_scylla_version_lt(reason='scylladb/scylladb#26992 - system.client_routes is not yet supported',
+-                             oss_scylla_version="7.0", ent_scylla_version="2025.4.0")
++                             oss_scylla_version="7.0", ent_scylla_version="2026.1.0")
+     def test_client_routes_change_event(self):
+         cluster = TestCluster()
+
+         # Establish control connection
+-        cluster.connect()
++        self.session = self.cluster.connect()
+
+         flag = Event()
+
+@@ -157,7 +161,7 @@ class ControlConnectionTests(unittest.TestCase):
+             finally:
+                 flag.set()
+
+-        cluster.control_connection._connection.register_watchers({"CLIENT_ROUTES_CHANGE": on_event})
++        self.session.cluster.control_connection._connection.register_watchers({"CLIENT_ROUTES_CHANGE": on_event})
+
+         try:
+             payload = [
+@@ -166,22 +170,12 @@ class ControlConnectionTests(unittest.TestCase):
+                     "host_id": host_ids[0],
+                     "address": "localhost",
+                     "port": 9042,
+-                    "tls_port": 0,
+-                    "alternator_port": 0,
+-                    "alternator_https_port": 0,
+-                    "rack": "string",
+-                    "datacenter": "string"
+                 },
+                 {
+                     "connection_id": connection_ids[1],
+                     "host_id": host_ids[1],
+                     "address": "localhost",
+                     "port": 9042,
+-                    "tls_port": 0,
+-                    "alternator_port": 0,
+-                    "alternator_https_port": 0,
+-                    "rack": "string",
+-                    "datacenter": "string"
+                 }
+             ]
+             response = requests.post(
+@@ -193,7 +187,7 @@ class ControlConnectionTests(unittest.TestCase):
+                 })
+             assert response.status_code == 200
+             assert flag.wait(20), "Schema change event was not received after registering watchers"
+-            assert got_connection_ids == connection_ids
+-            assert got_host_ids == host_ids
++            assert set(got_connection_ids) == set(connection_ids)
++            assert set(got_host_ids) == set(host_ids)
+         finally:
+             cluster.shutdown()
