@@ -180,6 +180,24 @@ index d0f10d51..d8353ec3 100644
      # wait until all nodes are up
      wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.1'], port=9046).connect().shutdown(), 1, 20)
      wait_until_not_raised(lambda: TestCluster(contact_points=['127.0.0.2'], port=9046).connect().shutdown(), 1, 20)
+diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
+index 3534f29f..96977d40 100644
+--- a/tests/integration/standard/test_metadata.py
++++ b/tests/integration/standard/test_metadata.py
+@@ -2078,12 +2078,9 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+
+         @test_category metadata
+         """
+         compaction = self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"]
+-        if HCD_VERSION:
+-            self.assertIn("UnifiedCompactionStrategy", compaction)
+-        else:
+-            self.assertIn("SizeTieredCompactionStrategy", compaction)
++        self.assertIn(compaction, ["SizeTieredCompactionStrategy", "IncrementalCompactionStrategy"])
+
+         self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
+         compaction = self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"]
+         self.assertIn("LeveledCompactionStrategy", compaction)
 diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
 index a643b19c..bbde2aff 100644
 --- a/tests/integration/standard/test_prepared_statements.py
