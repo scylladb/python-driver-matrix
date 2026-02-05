@@ -104,9 +104,8 @@ class ProcessJUnit:
                               " Please remove this mark from the test"
                     tag_name = "failure"
                 elif test_full_name in self.summary_full_details.get("xfailed", {}):
-                    message = "This test marked as 'xfailed' because it contains '@unittest.expectedFailure' mark -" \
-                              " Please remove this mark from the test"
-                    tag_name = "failure"
+                    message = "This test marked as 'xfailed' because it contains '@unittest.expectedFailure' mark"
+                    tag_name = "skipped"
                 elif test_full_name in self.summary_full_details.get("ignored_in_analysis", {}):
                     message = "This test marked as 'skipped' because it appears in the YAML file"
                     tag_name = "skipped"
@@ -133,4 +132,4 @@ class ProcessJUnit:
     def is_failed(self) -> bool:
         return not (self.summary["tests"] and self.summary["tests"] ==
                     self.summary["passed"] + self.summary["skipped"] + self.summary["ignored_in_analysis"] +
-                    self.summary["flaky"] + self.summary["xpassed"])
+                    self.summary["flaky"] + self.summary["xpassed"] + self.summary["xfailed"])
