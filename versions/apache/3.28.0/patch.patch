@@ -1,3 +1,64 @@
+diff --git a/ez_setup.py b/ez_setup.py
+index 25354721..ad9dd823 100644
+--- a/ez_setup.py
++++ b/ez_setup.py
+@@ -108,30 +108,38 @@ def use_setuptools(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
+                    to_dir=os.curdir, download_delay=15):
+     # making sure we use the absolute path
+     to_dir = os.path.abspath(to_dir)
+-    was_imported = 'pkg_resources' in sys.modules or \
++    was_imported = 'importlib.metadata' in sys.modules or \
+         'setuptools' in sys.modules
+     try:
+-        import pkg_resources
++        from importlib.metadata import version as get_version, PackageNotFoundError
++        from packaging.version import Version
+     except ImportError:
+         return _do_download(version, download_base, to_dir, download_delay)
+     try:
+-        pkg_resources.require("setuptools>=" + version)
++        installed_version = get_version("setuptools")
++        if Version(installed_version) < Version(version):
++            raise Exception("Version conflict")
+         return
+-    except pkg_resources.VersionConflict:
+-        e = sys.exc_info()[1]
+-        if was_imported:
+-            sys.stderr.write(
+-            "The required version of setuptools (>=%s) is not available,\n"
+-            "and can't be installed while this script is running. Please\n"
+-            "install a more recent version first, using\n"
+-            "'easy_install -U setuptools'."
+-            "\n\n(Currently using %r)\n" % (version, e.args[0]))
+-            sys.exit(2)
+-        else:
+-            del pkg_resources, sys.modules['pkg_resources']    # reload ok
+-            return _do_download(version, download_base, to_dir,
+-                                download_delay)
+-    except pkg_resources.DistributionNotFound:
++    except Exception as e:
++        if "Version conflict" in str(e):
++            if was_imported:
++                sys.stderr.write(
++                "The required version of setuptools (>=%s) is not available,\n"
++                "and can't be installed while this script is running. Please\n"
++                "install a more recent version first, using\n"
++                "'easy_install -U setuptools'."
++                "\n\n(Currently using %r)\n" % (version, installed_version))
++                sys.exit(2)
++            else:
++                # Clean up imported modules
++                if 'importlib.metadata' in sys.modules:
++                    del sys.modules['importlib.metadata']
++                return _do_download(version, download_base, to_dir,
++                                    download_delay)
++        # Handle PackageNotFoundError or any other exception
++        return _do_download(version, download_base, to_dir,
++                            download_delay)
++    except PackageNotFoundError:
+         return _do_download(version, download_base, to_dir,
+                             download_delay)
+
 diff --git a/test-requirements.txt b/test-requirements.txt
 index e3f8e1ca..831a3152 100644
 --- a/test-requirements.txt
@@ -26,7 +87,7 @@ index b158ed2b..2a5d7210 100644
 @@ -165,16 +167,21 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
  SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
  CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
- 
+
 -# Supported Clusters: Cassandra, DDAC, DSE
 +# Supported Clusters: Cassandra, DDAC, DSE, Scylla
  DSE_VERSION = None
@@ -67,7 +128,7 @@ index b158ed2b..2a5d7210 100644
                      return False
              return True
 @@ -561,8 +570,13 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
- 
+
                  CCM_CLUSTER.set_dse_configuration_options(dse_options)
              else:
 -                CCM_CLUSTER = CCMCluster(path, cluster_name, **ccm_options)
@@ -88,12 +149,12 @@ index b158ed2b..2a5d7210 100644
                  CCM_CLUSTER.set_configuration_options(configuration_options)
 -                CCM_CLUSTER.populate(nodes, ipformat=ipformat, use_single_interface=use_single_interface)
 +                CCM_CLUSTER.populate(nodes, ipformat=ipformat)
- 
+
      try:
          jvm_args = []
- 
+
          # This will enable the Mirroring query handler which will echo our custom payload k,v pairs back
- 
+
 -        if 'graph' in workloads:
 -            jvm_args += ['-Xms1500M', '-Xmx1500M']
 -        else:
@@ -141,7 +202,7 @@ index 546141d8..a8cb9396 100644
 --- a/tests/integration/standard/test_authentication_misconfiguration.py
 +++ b/tests/integration/standard/test_authentication_misconfiguration.py
 @@ -19,6 +19,12 @@ from tests.integration import USE_CASS_EXTERNAL, use_cluster, TestCluster
- 
+
  class MisconfiguredAuthenticationTests(unittest.TestCase):
      """ One node (not the contact point) has password auth. The rest of the nodes have no auth """
 +    # TODO: 	Fix ccm to apply following options to scylla.yaml
@@ -171,12 +232,12 @@ index 3534f29f..96977d40 100644
 --- a/tests/integration/standard/test_metadata.py
 +++ b/tests/integration/standard/test_metadata.py
 @@ -2078,7 +2078,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
- 
+
          @test_category metadata
          """
 -        self.assertIn("SizeTieredCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
 +        self.assertIn(self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"], ["SizeTieredCompactionStrategy", "IncrementalCompactionStrategy"])
- 
+
          self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
          self.assertIn("LeveledCompactionStrategy", self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"])
 diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py

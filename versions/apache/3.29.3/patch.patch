@@ -1,3 +1,64 @@
+diff --git a/ez_setup.py b/ez_setup.py
+index 76e71057..f9528661 100644
+--- a/ez_setup.py
++++ b/ez_setup.py
+@@ -109,30 +109,38 @@ def use_setuptools(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
+                    to_dir=os.curdir, download_delay=15):
+     # making sure we use the absolute path
+     to_dir = os.path.abspath(to_dir)
+-    was_imported = 'pkg_resources' in sys.modules or \
++    was_imported = 'importlib.metadata' in sys.modules or \
+         'setuptools' in sys.modules
+     try:
+-        import pkg_resources
++        from importlib.metadata import version as get_version, PackageNotFoundError
++        from packaging.version import Version
+     except ImportError:
+         return _do_download(version, download_base, to_dir, download_delay)
+     try:
+-        pkg_resources.require("setuptools>=" + version)
++        installed_version = get_version("setuptools")
++        if Version(installed_version) < Version(version):
++            raise Exception("Version conflict")
+         return
+-    except pkg_resources.VersionConflict:
+-        e = sys.exc_info()[1]
+-        if was_imported:
+-            sys.stderr.write(
+-            "The required version of setuptools (>=%s) is not available,\n"
+-            "and can't be installed while this script is running. Please\n"
+-            "install a more recent version first, using\n"
+-            "'easy_install -U setuptools'."
+-            "\n\n(Currently using %r)\n" % (version, e.args[0]))
+-            sys.exit(2)
+-        else:
+-            del pkg_resources, sys.modules['pkg_resources']    # reload ok
+-            return _do_download(version, download_base, to_dir,
+-                                download_delay)
+-    except pkg_resources.DistributionNotFound:
++    except Exception as e:
++        if "Version conflict" in str(e):
++            if was_imported:
++                sys.stderr.write(
++                "The required version of setuptools (>=%s) is not available,\n"
++                "and can't be installed while this script is running. Please\n"
++                "install a more recent version first, using\n"
++                "'easy_install -U setuptools'."
++                "\n\n(Currently using %r)\n" % (version, installed_version))
++                sys.exit(2)
++            else:
++                # Clean up imported modules
++                if 'importlib.metadata' in sys.modules:
++                    del sys.modules['importlib.metadata']
++                return _do_download(version, download_base, to_dir,
++                                    download_delay)
++        # Handle PackageNotFoundError or any other exception
++        return _do_download(version, download_base, to_dir,
++                            download_delay)
++    except PackageNotFoundError:
+         return _do_download(version, download_base, to_dir,
+                             download_delay)
+
 diff --git a/test-requirements.txt b/test-requirements.txt
 index 94ac6117..b73d06bd 100644
 --- a/test-requirements.txt
