@@ -67,7 +67,7 @@ class Run:
 
     @cached_property
     def xunit_file(self) -> Path:
-        
+
         if not self.xunit_dir.exists():
             self.xunit_dir.mkdir(parents=True)
 
@@ -190,6 +190,8 @@ class Run:
     def _checkout_branch(self):
         try:
             self._run_command_in_shell("git checkout .")
+            # Clean up untracked files and build artifacts to prevent interference between versions
+            self._run_command_in_shell("git clean -fdx")
             logging.info("git checkout to '%s' tag branch", self._full_driver_version)
             self._run_command_in_shell(f"git checkout {self._full_driver_version}")
             return True
