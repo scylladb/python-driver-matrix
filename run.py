@@ -67,7 +67,7 @@ class Run:
 
     @cached_property
     def xunit_file(self) -> Path:
-        
+
         if not self.xunit_dir.exists():
             self.xunit_dir.mkdir(parents=True)
 
@@ -176,10 +176,11 @@ class Run:
                     logging.info("Installing UV package manager")
                     self._run_command_in_shell("curl -LsSf https://astral.sh/uv/install.sh | sh")
             self._create_venv()
+            pip_prefix = "uv " if self._python_driver_type == "scylla" else ""
             for requirement_file in ["requirements.txt", "test-requirements.txt"]:
                 if os.path.exists(requirement_file):
                     self._run_command_in_shell(f"{self._activate_venv_cmd()} && "
-                                               f"pip install --force-reinstall -r {requirement_file}")
+                                               f"{pip_prefix}pip install --force-reinstall -r {requirement_file}")
             return True
         except Exception as exc:
             logging.error("Failed to install python requirements for version %s, with: %s",
@@ -189,6 +190,8 @@ class Run:
     def _checkout_branch(self):
         try:
             self._run_command_in_shell("git checkout .")
+            # Clean up untracked files and build artifacts to prevent interference between versions
+            self._run_command_in_shell("git clean -fdx")
             logging.info("git checkout to '%s' tag branch", self._full_driver_version)
             self._run_command_in_shell(f"git checkout {self._full_driver_version}")
             return True
