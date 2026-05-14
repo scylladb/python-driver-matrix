@@ -73,10 +73,20 @@ index 513451b4..baba2b1a 100644
  pure-sasl
  twisted[tls]
 diff --git a/tests/integration/__init__.py b/tests/integration/__init__.py
-index 4185f527..f67a2bbe 100644
+index 4185f527..2f5e6a7b 100644
 --- a/tests/integration/__init__.py
 +++ b/tests/integration/__init__.py
-@@ -40,8 +40,8 @@ from cassandra import ProtocolVersion
+@@ -14,6 +14,9 @@
+ 
+ import re
+ import os
++
++import ccmlib
++import pytest
+ from cassandra.cluster import Cluster
+ 
+ from tests import connection_class, EVENT_LOOP_MANAGER
+@@ -40,8 +43,8 @@ from cassandra import ProtocolVersion
  
  try:
      from ccmlib.dse_cluster import DseCluster
@@ -86,7 +96,17 @@ index 4185f527..f67a2bbe 100644
      from ccmlib.cluster_factory import ClusterFactory as CCMClusterFactory
      from ccmlib import common
  except ImportError as e:
-@@ -171,9 +171,10 @@ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
+@@ -166,14 +169,20 @@ def _get_dse_version_from_cass(cass_version):
+         dse_ver = "2.1"
+     return dse_ver
+ 
++def get_scylla_version(scylla_ccm_version_string):
++    """ get scylla version from ccm before starting a cluster"""
++    ccm_repo_cache_dir, _ = ccmlib.scylla_repository.setup(version=scylla_ccm_version_string)
++    return  ccmlib.common.get_version_from_build(ccm_repo_cache_dir)
++
+ USE_CASS_EXTERNAL = bool(os.getenv('USE_CASS_EXTERNAL', False))
+ KEEP_TEST_CLUSTER = bool(os.getenv('KEEP_TEST_CLUSTER', False))
  SIMULACRON_JAR = os.getenv('SIMULACRON_JAR', None)
  CLOUD_PROXY_PATH = os.getenv('CLOUD_PROXY_PATH', None)
  
@@ -98,7 +118,7 @@ index 4185f527..f67a2bbe 100644
  if os.getenv('DSE_VERSION', None):  # we are testing against DSE
      DSE_VERSION = Version(os.getenv('DSE_VERSION', None))
      DSE_CRED = os.getenv('DSE_CREDS', None)
-@@ -184,8 +185,12 @@ elif os.getenv('HCD_VERSION', None):  # we are testing against HCD
+@@ -184,8 +193,12 @@ elif os.getenv('HCD_VERSION', None):  # we are testing against HCD
      CASSANDRA_VERSION = _get_cass_version_from_hcd(HCD_VERSION.base_version)
      CCM_VERSION = HCD_VERSION.base_version
  else:  # we are testing against Cassandra or DDAC
@@ -113,7 +133,7 @@ index 4185f527..f67a2bbe 100644
      try:
          cassandra_version = Version(cv_string)  # env var is set to test-dse for DDAC
      except:
-@@ -212,6 +217,8 @@ elif HCD_VERSION:
+@@ -212,6 +225,8 @@ elif HCD_VERSION:
  elif CASSANDRA_DIR:
      log.info("Using Cassandra dir: %s", CASSANDRA_DIR)
      CCM_KWARGS['install_dir'] = CASSANDRA_DIR
@@ -122,7 +142,7 @@ index 4185f527..f67a2bbe 100644
  else:
      log.info('Using Cassandra version: %s', CCM_VERSION)
      CCM_KWARGS['version'] = CCM_VERSION
-@@ -455,7 +462,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
+@@ -455,7 +470,7 @@ def is_current_cluster(cluster_name, node_counts, workloads):
          if [len(list(nodes)) for dc, nodes in
                  groupby(CCM_CLUSTER.nodelist(), lambda n: n.data_center)] == node_counts:
              for node in CCM_CLUSTER.nodelist():
@@ -131,7 +151,7 @@ index 4185f527..f67a2bbe 100644
                      print("node workloads don't match creating new cluster")
                      return False
              return True
-@@ -590,9 +597,14 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -590,9 +605,14 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
                  CCM_CLUSTER.set_configuration_options(configuration_options)
                  CCM_CLUSTER.populate(nodes, ipformat=ipformat, use_single_interface=use_single_interface)
              else:
@@ -149,7 +169,7 @@ index 4185f527..f67a2bbe 100644
                  if Version(cassandra_version) >= Version('2.2'):
                      CCM_CLUSTER.set_configuration_options({'enable_user_defined_functions': True})
                      if Version(cassandra_version) >= Version('3.0'):
-@@ -609,18 +621,22 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
+@@ -609,18 +629,22 @@ def use_cluster(cluster_name, nodes, ipformat=None, start=True, workloads=None,
  
                  common.switch_cluster(path, cluster_name)
                  CCM_CLUSTER.set_configuration_options(configuration_options)
@@ -178,7 +198,7 @@ index 4185f527..f67a2bbe 100644
          if len(workloads) > 0:
              for node in CCM_CLUSTER.nodes.values():
                  node.set_workloads(workloads)
-@@ -758,17 +774,17 @@ def setup_keyspace(ipformat=None, wait=True, protocol_version=None, port=9042):
+@@ -758,17 +782,17 @@ def setup_keyspace(ipformat=None, wait=True, protocol_version=None, port=9042):
  
          ddl = '''
              CREATE KEYSPACE test3rf
@@ -199,7 +219,32 @@ index 4185f527..f67a2bbe 100644
          execute_with_long_wait_retry(session, ddl)
  
          ddl_3f = '''
-@@ -837,7 +853,7 @@ class BasicKeyspaceUnitTestCase(unittest.TestCase):
+@@ -789,6 +813,24 @@ def setup_keyspace(ipformat=None, wait=True, protocol_version=None, port=9042):
+     finally:
+         cluster.shutdown()
+ 
++def xfail_scylla_version_lt(reason, scylla_version, *args, **kwargs):
++    """
++    It is used to mark tests that are going to fail on certain scylla versions.
++    :param reason: message to fail test with
++    :param scylla_version: str, version from which test supposed to succeed
++    """
++    if not (reason.startswith("scylladb/scylladb#") or reason.startswith("scylladb/scylla-enterprise#")):
++        raise ValueError('reason should start with scylladb/scylladb#<issue-id> or scylladb/scylla-enterprise#<issue-id> to reference issue in scylla repo')
++
++    if not isinstance(scylla_version, str):
++        raise ValueError('scylla_version should be a str')
++
++    if SCYLLA_VERSION is None:
++        return pytest.mark.skipif(False, reason="It is just a NoOP Decor, should not skip anything")
++
++    current_version = Version(get_scylla_version(SCYLLA_VERSION))
++
++    return pytest.mark.xfail(current_version < Version(scylla_version), reason=reason, *args, **kwargs)
+ 
+ class UpDownWaiter(object):
+ 
+@@ -837,7 +879,7 @@ class BasicKeyspaceUnitTestCase(unittest.TestCase):
  
      @classmethod
      def create_keyspace(cls, rf):
@@ -241,6 +286,29 @@ index e17ac302..5c257531 100644
 +                cluster.clear()
 +            except FileNotFoundError:
 +                pass
+diff --git a/tests/integration/cqlengine/query/test_named.py b/tests/integration/cqlengine/query/test_named.py
+index eb85bbbb..10047a19 100644
+--- a/tests/integration/cqlengine/query/test_named.py
++++ b/tests/integration/cqlengine/query/test_named.py
+@@ -27,7 +27,8 @@ from tests.integration.cqlengine.base import BaseCassEngTestCase
+ from tests.integration.cqlengine.query.test_queryset import BaseQuerySetUsage
+ 
+ 
+-from tests.integration import BasicSharedKeyspaceUnitTestCase, greaterthanorequalcass30
++from tests.integration import BasicSharedKeyspaceUnitTestCase, greaterthanorequalcass30, requires_collection_indexes, xfail_scylla_version_lt
++import pytest
+ 
+ 
+ class TestQuerySetOperation(BaseCassEngTestCase):
+@@ -291,6 +292,8 @@ class TestNamedWithMV(BasicSharedKeyspaceUnitTestCase):
+         super(TestNamedWithMV, cls).tearDownClass()
+ 
+     @greaterthanorequalcass30
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Materialized views and secondary indexes are not supported on base tables with tablets.',
++                             scylla_version='2026.1')
+     @execute_count(5)
+     def test_named_table_with_mv(self):
+         """
 diff --git a/tests/integration/standard/column_encryption/test_policies.py b/tests/integration/standard/column_encryption/test_policies.py
 index 325c19cf..f4789ca1 100644
 --- a/tests/integration/standard/column_encryption/test_policies.py
@@ -430,10 +498,20 @@ index 7b96094b..0ce53561 100644
          self.assertFalse(result)
  
 diff --git a/tests/integration/standard/test_metadata.py b/tests/integration/standard/test_metadata.py
-index 573fc99d..7057c212 100644
+index 573fc99d..dec5845b 100644
 --- a/tests/integration/standard/test_metadata.py
 +++ b/tests/integration/standard/test_metadata.py
-@@ -215,8 +215,8 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+@@ -38,7 +38,8 @@ from tests.integration import (get_cluster, use_singledc, PROTOCOL_VERSION, exec
+                                get_supported_protocol_versions, greaterthancass20,
+                                greaterthancass21, assert_startswith, greaterthanorequalcass40,
+                                greaterthanorequaldse67, lessthancass40,
+-                               TestCluster, DSE_VERSION, HCD_VERSION)
++                               TestCluster, DSE_VERSION, HCD_VERSION,
++                               xfail_scylla_version_lt)
+ 
+ 
+ log = logging.getLogger(__name__)
+@@ -215,8 +216,8 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
  
          self.assertEqual(ksmeta.name, self.keyspace_name)
          self.assertTrue(ksmeta.durable_writes)
@@ -444,7 +522,16 @@ index 573fc99d..7057c212 100644
  
          self.assertTrue(self.function_table_name in ksmeta.tables)
          tablemeta = ksmeta.tables[self.function_table_name]
-@@ -577,7 +577,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+@@ -432,6 +433,8 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         tablemeta = self.get_table_metadata()
+         self.check_create_statement(tablemeta, create_statement)
+ 
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Counters are not yet supported with tablets',
++                             scylla_version="2026.1")
+     def test_counter(self):
+         create_statement = (
+             "CREATE TABLE {keyspace}.{table} ("
+@@ -577,7 +580,7 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
          self.assertNotIn("new_keyspace", cluster2.metadata.keyspaces)
  
          # Cluster metadata modification
@@ -453,7 +540,34 @@ index 573fc99d..7057c212 100644
          self.assertNotIn("new_keyspace", cluster2.metadata.keyspaces)
  
          cluster2.refresh_schema_metadata()
-@@ -1098,7 +1098,7 @@ class TestCodeCoverage(unittest.TestCase):
+@@ -698,6 +701,8 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         cluster2.shutdown()
+ 
+     @greaterthanorequalcass30
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_refresh_metadata_for_mv(self):
+         """
+         test for synchronously refreshing materialized view metadata
+@@ -904,6 +909,8 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         cluster2.shutdown()
+ 
+     @greaterthanorequalcass30
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_multiple_indices(self):
+         """
+         test multiple indices on the same column.
+@@ -937,6 +944,8 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
+         self.assertEqual(index_2.keyspace_name, "schemametadatatests")
+ 
+     @greaterthanorequalcass30
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_table_extensions(self):
+         s = self.session
+         ks = self.keyspace_name
+@@ -1098,7 +1107,7 @@ class TestCodeCoverage(unittest.TestCase):
  
          session.execute("""
              CREATE KEYSPACE export_udts
@@ -462,7 +576,7 @@ index 573fc99d..7057c212 100644
              AND durable_writes = true;
          """)
          session.execute("""
-@@ -1122,7 +1122,7 @@ class TestCodeCoverage(unittest.TestCase):
+@@ -1122,7 +1131,7 @@ class TestCodeCoverage(unittest.TestCase):
              addresses map<text, frozen<address>>)
          """)
  
@@ -471,7 +585,16 @@ index 573fc99d..7057c212 100644
  
  CREATE TYPE export_udts.street (
      street_number int,
-@@ -1170,7 +1170,7 @@ CREATE TABLE export_udts.users (
+@@ -1156,6 +1165,8 @@ CREATE TABLE export_udts.users (
+         cluster.shutdown()
+ 
+     @greaterthancass21
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_case_sensitivity(self):
+         """
+         Test that names that need to be escaped in CREATE statements are
+@@ -1170,7 +1181,7 @@ CREATE TABLE export_udts.users (
          session.execute("DROP KEYSPACE IF EXISTS {0}".format(ksname))
          session.execute("""
              CREATE KEYSPACE "%s"
@@ -480,7 +603,7 @@ index 573fc99d..7057c212 100644
              """ % (ksname,))
          session.execute("""
              CREATE TABLE "%s"."%s" (
-@@ -1214,7 +1214,7 @@ CREATE TABLE export_udts.users (
+@@ -1214,7 +1225,7 @@ CREATE TABLE export_udts.users (
  
          ddl = '''
              CREATE KEYSPACE %s
@@ -489,7 +612,7 @@ index 573fc99d..7057c212 100644
          self.assertRaises(AlreadyExists, session.execute, ddl % ksname)
  
          ddl = '''
-@@ -1289,7 +1289,7 @@ class KeyspaceAlterMetadata(unittest.TestCase):
+@@ -1289,7 +1300,7 @@ class KeyspaceAlterMetadata(unittest.TestCase):
          self.session = self.cluster.connect()
          name = self._testMethodName.lower()
          crt_ks = '''
@@ -498,7 +621,7 @@ index 573fc99d..7057c212 100644
          self.session.execute(crt_ks)
  
      def tearDown(self):
-@@ -1339,7 +1339,7 @@ class IndexMapTests(unittest.TestCase):
+@@ -1339,7 +1350,7 @@ class IndexMapTests(unittest.TestCase):
              cls.session.execute(
                  """
                  CREATE KEYSPACE %s
@@ -507,7 +630,25 @@ index 573fc99d..7057c212 100644
                  """ % cls.keyspace_name)
              cls.session.set_keyspace(cls.keyspace_name)
          except Exception:
-@@ -1442,7 +1442,7 @@ class FunctionTest(unittest.TestCase):
+@@ -1359,6 +1370,8 @@ class IndexMapTests(unittest.TestCase):
+     def drop_basic_table(self):
+         self.session.execute("DROP TABLE %s" % self.table_name)
+ 
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_index_updates(self):
+         self.create_basic_table()
+ 
+@@ -1400,6 +1413,8 @@ class IndexMapTests(unittest.TestCase):
+         self.assertNotIn('a_idx', ks_meta.indexes)
+         self.assertNotIn('b_idx', ks_meta.indexes)
+ 
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_index_follows_alter(self):
+         self.create_basic_table()
+ 
+@@ -1442,7 +1457,7 @@ class FunctionTest(unittest.TestCase):
              cls.cluster = TestCluster()
              cls.keyspace_name = cls.__name__.lower()
              cls.session = cls.cluster.connect()
@@ -516,7 +657,7 @@ index 573fc99d..7057c212 100644
              cls.session.set_keyspace(cls.keyspace_name)
              cls.keyspace_function_meta = cls.cluster.metadata.keyspaces[cls.keyspace_name].functions
              cls.keyspace_aggregate_meta = cls.cluster.metadata.keyspaces[cls.keyspace_name].aggregates
-@@ -1908,7 +1908,7 @@ class BadMetaTest(unittest.TestCase):
+@@ -1908,7 +1923,7 @@ class BadMetaTest(unittest.TestCase):
          cls.cluster = TestCluster()
          cls.keyspace_name = cls.__name__.lower()
          cls.session = cls.cluster.connect()
@@ -525,7 +666,25 @@ index 573fc99d..7057c212 100644
          cls.session.set_keyspace(cls.keyspace_name)
          connection = cls.cluster.control_connection._connection
  
-@@ -2079,10 +2079,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+@@ -1939,6 +1954,8 @@ class BadMetaTest(unittest.TestCase):
+             self.assertIs(m._exc_info[0], self.BadMetaException)
+             self.assertIn("/*\nWarning:", m.export_as_string())
+ 
++    @xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+     def test_bad_index(self):
+         self.session.execute('CREATE TABLE %s (k int PRIMARY KEY, v int)' % self.function_name)
+         self.session.execute('CREATE INDEX ON %s(v)' % self.function_name)
+@@ -2027,6 +2044,8 @@ class DynamicCompositeTypeTest(BasicSharedKeyspaceUnitTestCase):
+ 
+ 
+ @greaterthanorequalcass30
++@xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                         scylla_version="2026.1")
+ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+ 
+     def setUp(self):
+@@ -2079,10 +2098,7 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
          @test_category metadata
          """
          compaction = self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"]
@@ -537,6 +696,15 @@ index 573fc99d..7057c212 100644
  
          self.session.execute("ALTER MATERIALIZED VIEW {0}.mv1 WITH compaction = {{ 'class' : 'LeveledCompactionStrategy' }}".format(self.keyspace_name))
          compaction = self.cluster.metadata.keyspaces[self.keyspace_name].tables[self.function_table_name].views["mv1"].options["compaction"]["class"]
+@@ -2119,6 +2135,8 @@ class MaterializedViewMetadataTestSimple(BasicSharedKeyspaceUnitTestCase):
+ 
+ 
+ @greaterthanorequalcass30
++@xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Secondary indexes are not supported on base tables with tablets',
++                             scylla_version="2026.1")
+ class MaterializedViewMetadataTestComplex(BasicSegregatedKeyspaceUnitTestCase):
+     def test_create_view_metadata(self):
+         """
 diff --git a/tests/integration/standard/test_prepared_statements.py b/tests/integration/standard/test_prepared_statements.py
 index c25f8b90..5900a008 100644
 --- a/tests/integration/standard/test_prepared_statements.py
@@ -569,10 +737,28 @@ index c25f8b90..5900a008 100644
          self.session.execute("CREATE TABLE IF NOT EXISTS {}.foo(k int PRIMARY KEY)".format(keyspace))
          prepared = self.session.prepare("SELECT * FROM {}.foo WHERE k=?".format(keyspace))
 diff --git a/tests/integration/standard/test_query.py b/tests/integration/standard/test_query.py
-index 17598758..0899af6a 100644
+index 17598758..311d64d2 100644
 --- a/tests/integration/standard/test_query.py
 +++ b/tests/integration/standard/test_query.py
-@@ -1357,12 +1357,12 @@ class BaseKeyspaceTests():
+@@ -25,7 +25,7 @@ from cassandra.cluster import NoHostAvailable, ExecutionProfile, EXEC_PROFILE_DE
+ from cassandra.policies import HostDistance, RoundRobinPolicy, WhiteListRoundRobinPolicy
+ from tests.integration import use_singledc, PROTOCOL_VERSION, BasicSharedKeyspaceUnitTestCase, \
+     greaterthanprotocolv3, MockLoggingHandler, get_supported_protocol_versions, local, get_cluster, setup_keyspace, \
+-    USE_CASS_EXTERNAL, greaterthanorequalcass40, DSE_VERSION, TestCluster, requirecassandra
++    USE_CASS_EXTERNAL, greaterthanorequalcass40, DSE_VERSION, TestCluster, requirecassandra, xfail_scylla_version_lt
+ from tests import notwindows
+ from tests.integration import greaterthanorequalcass30, get_node
+ 
+@@ -1152,6 +1152,8 @@ class BatchStatementDefaultRoutingKeyTests(unittest.TestCase):
+ 
+ 
+ @greaterthanorequalcass30
++@xfail_scylla_version_lt(reason='scylladb/scylladb#22677 - Materialized views and secondary indexes are not supported on base tables with tablets.',
++                         scylla_version='2026.1')
+ class MaterializedViewQueryTest(BasicSharedKeyspaceUnitTestCase):
+ 
+     def test_mv_filtering(self):
+@@ -1357,12 +1359,12 @@ class BaseKeyspaceTests():
          cls.table_name = "table_query_keyspace_tests"
  
          ddl = """CREATE KEYSPACE {0} WITH replication =
