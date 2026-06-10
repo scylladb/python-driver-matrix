@@ -686,6 +686,34 @@ index 3ede0ac3..da512f8f 100644
  class MaterializedViewQueryTest(BasicSharedKeyspaceUnitTestCase):
  
      def test_mv_filtering(self):
+diff --git a/tests/integration/standard/test_types.py b/tests/integration/standard/test_types.py
+index 3a6de0d4..a188843b 100644
+--- a/tests/integration/standard/test_types.py
++++ b/tests/integration/standard/test_types.py
+@@ -664,18 +664,20 @@ class TypeTests(BasicSharedKeyspaceUnitTestCase):
+         s.encoder.mapping[tuple] = s.encoder.cql_encode_tuple
+ 
+         # create a table with multiple sizes of nested tuples
++        # Note: Scylla limits CQL expression nesting depth to 12, so the
++        # deepest tuple tested here is 12 levels deep.
+         s.execute("CREATE TABLE nested_tuples ("
+                   "k int PRIMARY KEY, "
+                   "v_1 frozen<%s>,"
+                   "v_2 frozen<%s>,"
+                   "v_3 frozen<%s>,"
+-                  "v_32 frozen<%s>"
++                  "v_12 frozen<%s>"
+                   ")" % (self.nested_tuples_schema_helper(1),
+                          self.nested_tuples_schema_helper(2),
+                          self.nested_tuples_schema_helper(3),
+-                         self.nested_tuples_schema_helper(32)))
++                         self.nested_tuples_schema_helper(12)))
+ 
+-        for i in (1, 2, 3, 32):
++        for i in (1, 2, 3, 12):
+             # create tuple
+             created_tuple = self.nested_tuples_creator_helper(i)
+ 
 diff --git a/tests/integration/standard/test_udts.py b/tests/integration/standard/test_udts.py
 index 9c3e560b..5b347ce2 100644
 --- a/tests/integration/standard/test_udts.py
@@ -735,3 +763,30 @@ index 9c3e560b..5b347ce2 100644
              """)
          s.set_keyspace("udt_test_prepared_registered2")
          s.execute("CREATE TYPE user (state text, is_cool boolean)")
+@@ -394,7 +394,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
+         with self._cluster_default_dict_factory() as c:
+             s = c.connect(self.keyspace_name, wait_for_all_pools=True)
+ 
+-            max_nesting_depth = 16
++            max_nesting_depth = 12
+ 
+             # create the schema
+             self.nested_udt_schema_helper(s, max_nesting_depth)
+@@ -422,7 +422,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
+         with self._cluster_default_dict_factory() as c:
+             s = c.connect(self.keyspace_name, wait_for_all_pools=True)
+ 
+-            max_nesting_depth = 16
++            max_nesting_depth = 12
+ 
+             # create the schema
+             self.nested_udt_schema_helper(s, max_nesting_depth)
+@@ -459,7 +459,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
+         with self._cluster_default_dict_factory() as c:
+             s = c.connect(self.keyspace_name, wait_for_all_pools=True)
+ 
+-            max_nesting_depth = 16
++            max_nesting_depth = 12
+ 
+             # create the schema
+             self.nested_udt_schema_helper(s, max_nesting_depth)
