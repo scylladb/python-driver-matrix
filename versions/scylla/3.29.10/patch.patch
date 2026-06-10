@@ -446,30 +446,32 @@ index d9691403..45e8a807 100644
  
  class TestTabletsIntegration:
 diff --git a/tests/integration/standard/test_types.py b/tests/integration/standard/test_types.py
-index 559a6b3d..6bf25ce1 100644
+index 559a6b3d..d742f84f 100644
 --- a/tests/integration/standard/test_types.py
 +++ b/tests/integration/standard/test_types.py
-@@ -663,18 +663,20 @@ class TypeTests(BasicSharedKeyspaceUnitTestCase):
+@@ -663,18 +663,22 @@ class TypeTests(BasicSharedKeyspaceUnitTestCase):
          s.encoder.mapping[tuple] = s.encoder.cql_encode_tuple
  
          # create a table with multiple sizes of nested tuples
-+        # Note: Scylla limits CQL expression nesting depth to 12, so the
-+        # deepest tuple tested here is 12 levels deep.
++        # Note: Scylla limits CQL expression nesting depth to 12 (every
++        # recursive `term` counts, including the innermost scalar value), so a
++        # nested tuple literal can be at most 11 levels deep before the server
++        # rejects it with "expression nested too deeply".
          s.execute("CREATE TABLE nested_tuples ("
                    "k int PRIMARY KEY, "
                    "v_1 frozen<%s>,"
                    "v_2 frozen<%s>,"
                    "v_3 frozen<%s>,"
 -                  "v_32 frozen<%s>"
-+                  "v_12 frozen<%s>"
++                  "v_11 frozen<%s>"
                    ")" % (self.nested_tuples_schema_helper(1),
                           self.nested_tuples_schema_helper(2),
                           self.nested_tuples_schema_helper(3),
 -                         self.nested_tuples_schema_helper(32)))
-+                         self.nested_tuples_schema_helper(12)))
++                         self.nested_tuples_schema_helper(11)))
  
 -        for i in (1, 2, 3, 32):
-+        for i in (1, 2, 3, 12):
++        for i in (1, 2, 3, 11):
              # create tuple
              created_tuple = self.nested_tuples_creator_helper(i)
  
@@ -521,7 +523,21 @@ index 18f3dfb2..11888add 100644
              """)
          s.set_keyspace("udt_test_prepared_registered2")
          s.execute("CREATE TYPE user (state text, is_cool boolean)")
-@@ -389,7 +389,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
+@@ -389,7 +389,12 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
+         with self._cluster_default_dict_factory() as c:
+             s = c.connect(self.keyspace_name, wait_for_all_pools=True)
+ 
+-            max_nesting_depth = 16
++            # Scylla caps CQL expression nesting depth at 12 (every recursive
++            # `term` counts). A UDT literal `{value: ...}` adds two term levels
++            # per nesting, so a UDT literal inserted via a simple statement can
++            # be at most 10 levels deep before the server rejects it with
++            # "expression nested too deeply".
++            max_nesting_depth = 10
+ 
+             # create the schema
+             self.nested_udt_schema_helper(s, max_nesting_depth)
+@@ -417,7 +422,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
          with self._cluster_default_dict_factory() as c:
              s = c.connect(self.keyspace_name, wait_for_all_pools=True)
  
@@ -530,21 +546,17 @@ index 18f3dfb2..11888add 100644
  
              # create the schema
              self.nested_udt_schema_helper(s, max_nesting_depth)
-@@ -417,7 +417,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
+@@ -454,7 +459,12 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
          with self._cluster_default_dict_factory() as c:
              s = c.connect(self.keyspace_name, wait_for_all_pools=True)
  
 -            max_nesting_depth = 16
-+            max_nesting_depth = 12
- 
-             # create the schema
-             self.nested_udt_schema_helper(s, max_nesting_depth)
-@@ -454,7 +454,7 @@ class UDTTests(BasicSegregatedKeyspaceUnitTestCase):
-         with self._cluster_default_dict_factory() as c:
-             s = c.connect(self.keyspace_name, wait_for_all_pools=True)
- 
--            max_nesting_depth = 16
-+            max_nesting_depth = 12
++            # Scylla caps CQL expression nesting depth at 12 (every recursive
++            # `term` counts). A UDT literal `{value: ...}` adds two term levels
++            # per nesting, so a UDT literal inserted via a simple statement can
++            # be at most 10 levels deep before the server rejects it with
++            # "expression nested too deeply".
++            max_nesting_depth = 10
  
              # create the schema
              self.nested_udt_schema_helper(s, max_nesting_depth)
