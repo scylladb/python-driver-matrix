@@ -177,6 +177,10 @@ class Run:
                     self._run_command_in_shell("curl -LsSf https://astral.sh/uv/install.sh | sh")
             self._create_venv()
             pip_prefix = "uv " if self._python_driver_type == "scylla" else ""
+            if self._python_driver_type == "scylla":
+                self._run_command_in_shell(f"{self._activate_venv_cmd()} && "
+                                           "uv sync --active --group dev --inexact")
+                return True
             for requirement_file in ["requirements.txt", "test-requirements.txt"]:
                 if os.path.exists(requirement_file):
                     self._run_command_in_shell(f"{self._activate_venv_cmd()} && "
@@ -221,9 +225,8 @@ class Run:
         os.chdir(self._python_driver_git)
         if self._checkout_branch() and self._apply_patch_files() and self._install_python_requirements():
             prefix = ""
-            if self._python_driver_type == "scylla":
-                prefix = "uv "
-            self._run_command_in_shell(f"{self._activate_venv_cmd()} && {prefix}pip install -e .")
+            if self._python_driver_type != "scylla":
+                self._run_command_in_shell(f"{self._activate_venv_cmd()} && {prefix}pip install -e .")
             debug = '--log-cli-level=debug' if os.environ.get("DEV_MODE") else ''
             if self._python_driver_type == "scylla":
                 prefix = "uv run "
