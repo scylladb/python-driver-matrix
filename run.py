@@ -25,7 +25,10 @@ class Run:
         self._scylla_install_dir = scylla_install_dir
         self._tests = tests.replace(".", "/").replace("/py", ".py")
         self._protocol = int(protocol)
-        self._venv_path = self._python_driver_git / "venv" / self._python_driver_type / self.driver_version
+        if self._python_driver_type == "scylla":
+            self._venv_path = self._python_driver_git / ".venv"
+        else:
+            self._venv_path = self._python_driver_git / "venv" / self._python_driver_type / self.driver_version
         self._collect_only = collect_only
 
     @cached_property
@@ -106,6 +109,8 @@ class Run:
             home_dir = os.path.expanduser("~")
             uv_bin_path = f"{home_dir}/.local/bin"
             result["PATH"] = f"{uv_bin_path}:{result.get('PATH', os.environ.get('PATH', ''))}"
+            result.setdefault("UV_CACHE_DIR", f"{home_dir}/.uv-cache")
+            result.setdefault("UV_LINK_MODE", "copy")
 
         return result
 
@@ -171,14 +176,14 @@ class Run:
         try:
             if self._python_driver_type == "scylla":
                 # Install UV if not already installed
-                uv_path = os.path.expanduser("~/.local/bin/uv")
-                if not os.path.exists(uv_path):
+                if not shutil.which("uv", path=self.environment["PATH"]):
                     logging.info("Installing UV package manager")
                     self._run_command_in_shell("curl -LsSf https://astral.sh/uv/install.sh | sh")
             self._create_venv()
             pip_prefix = "uv " if self._python_driver_type == "scylla" else ""
             if self._python_driver_type == "scylla":
                 self._run_command_in_shell(f"{self._activate_venv_cmd()} && "
+                                           "CASS_DRIVER_BUILD_EXTENSIONS_ARE_MUST=yes "
                                            "uv sync --active --group dev --inexact")
                 return True
             for requirement_file in ["requirements.txt", "test-requirements.txt"]:

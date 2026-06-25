@@ -13,6 +13,7 @@ tests:
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_indexes
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_multiple_indices
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_case_sensitivity
+    - tests.integration.standard.test_metadata.TestCodeCoverage.test_export_keyspace_schema_udts
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_replicas
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_aggregate
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_function
@@ -56,6 +57,7 @@ v4_tests:
     - tests.integration.standard.test_cluster.ClusterTests.test_invalid_protocol_negotation
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_multiple_indices
     - tests.integration.standard.test_metadata.TestCodeCoverage.test_case_sensitivity
+    - tests.integration.standard.test_metadata.TestCodeCoverage.test_export_keyspace_schema_udts
     - tests.integration.standard.test_metadata.SchemaMetadataTests.test_collection_indexes
     - tests.integration.standard.test_metadata.BadMetaTest.test_bad_user_aggregate
     - tests.integration.standard.test_metadata.DynamicCompositeTypeTest.test_dct_alias
