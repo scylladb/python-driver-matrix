@@ -22,6 +22,8 @@ export JMX_DIR=${JMX_DIR:-`pwd`/../scylla-jmx}
 export DTEST_DIR=${DTEST_DIR:-`pwd`}
 export CCM_DIR=${CCM_DIR:-`pwd`/../scylla-ccm}
 export SCYLLA_DBUILD_SO_DIR=${SCYLLA_DBUILD_SO_DIR:-${INSTALL_DIRECTORY}/dynamic_libs}
+export PIP_CACHE_DIR=${PIP_CACHE_DIR:-${HOME}/.pip-cache}
+export UV_CACHE_DIR=${UV_CACHE_DIR:-${HOME}/.uv-cache}
 
 
 if [[ ! -d ${PYTHON_MATRIX_DIR} ]]; then
@@ -37,7 +39,10 @@ fi
 
 mkdir -p ${HOME}/.ccm
 mkdir -p ${HOME}/.local/lib
+mkdir -p ${HOME}/.config
 mkdir -p ${HOME}/.docker
+mkdir -p ${PIP_CACHE_DIR}
+mkdir -p ${UV_CACHE_DIR}
 
 # export all BUILD_* env vars into the docker run
 BUILD_OPTIONS=$(env | sed -n 's/^\(BUILD_[^=]\+\)=.*/--env \1/p')
@@ -104,7 +109,30 @@ done
 
 
 
-docker_cmd="docker run --detach=true \
+run_test_cmd=$(printf '%q ' "$@")
+
+container_cmd=$(cat <<'EOF'
+set -e
+pip install --user -e __CCM_DIR__
+export PATH="$PATH:${HOME}/.local/bin"
+export PYTHONPATH="__CCM_DIR__:${PYTHONPATH:-}"
+python3 - <<'PY'
+import ccmlib.scylla_repository as sr
+print(f"CCM repository module: {sr.__file__}")
+PY
+set +e
+__RUN_TEST_CMD__
+status=$?
+if command -v uv >/dev/null 2>&1; then
+    uv cache prune --ci || true
+fi
+exit "${status}"
+EOF
+)
+container_cmd=${container_cmd//__CCM_DIR__/${CCM_DIR}}
+container_cmd=${container_cmd/__RUN_TEST_CMD__/${run_test_cmd}}
+
+docker_cmd="docker run --init --detach=true \
     ${WORKSPACE_MNT} \
     ${DOCKER_COMMAND_PARAMS} \
     ${DOCKER_CONFIG_MNT} \
@@ -115,6 +143,8 @@ docker_cmd="docker run --detach=true \
     -e SCYLLA_EXT_OPTS \
     -e LC_ALL=en_US.UTF-8 \
     -e DEV_MODE \
+    -e PIP_CACHE_DIR \
+    -e UV_CACHE_DIR \
     -e WORKSPACE \
     ${BUILD_OPTIONS} \
     ${JOB_OPTIONS} \
@@ -130,10 +160,12 @@ docker_cmd="docker run --detach=true \
      --tmpfs ${HOME}/.shiv \
     --tmpfs ${HOME}/.config \
     --tmpfs ${HOME}/.cassandra \
+    -v ${PIP_CACHE_DIR}:${PIP_CACHE_DIR} \
+    -v ${UV_CACHE_DIR}:${UV_CACHE_DIR} \
     -v ${HOME}/.local:${HOME}/.local \
     -v ${HOME}/.ccm:${HOME}/.ccm \
     --network=host --privileged \
-    ${DOCKER_IMAGE} bash -c '$*'"
+    ${DOCKER_IMAGE} bash -c $(printf '%q' "$container_cmd")"
 
 echo "Running Docker: $docker_cmd"
 container=$(eval $docker_cmd)
@@ -166,4 +198,3 @@ trap - SIGTERM SIGINT SIGHUP EXIT
 [[ -z "$exitcode" ]] && exitcode=1
 
 exit "$exitcode"
-

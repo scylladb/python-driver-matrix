@@ -18,6 +18,7 @@ tests:
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
     - tests.integration.standard.test_prepared_statements.PreparedStatementTests.test_imprecise_bind_values_dicts
     - tests.integration.standard.test_shard_aware.TestShardAwareIntegration.test_closing_connections
+    - tests.integration.standard.test_client_routes.TestFullNodeReplacementThroughNlb.test_should_survive_full_node_replacement_through_nlb
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_legacy_parameters
   flaky:
     - tests.integration.standard.test_cluster.DeprecationWarningTest.test_deprecation_warnings_meta_refreshed
@@ -55,6 +56,7 @@ v4_tests:
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_stmt
     - tests.integration.standard.test_query.LightweightTransactionTests.test_was_applied_batch_string
     - tests.integration.standard.test_shard_aware.TestShardAwareIntegration.test_closing_connections
+    - tests.integration.standard.test_client_routes.TestPrivateLinkConnectivity.test_queries_succeed_through_proxy
     - tests.integration.standard.test_types.TypeTests.test_can_read_composite_type
     - tests.integration.standard.test_metadata.AggregateMetadata.test_aggregates_after_functions
     - tests.integration.standard.test_metadata.AggregateMetadata.test_aggregates_follow_keyspace_alter
