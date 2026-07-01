@@ -169,6 +169,20 @@ class Run:
     def _activate_venv_cmd(self):
         return f"source {self._venv_path}/bin/activate"
 
+    def _has_dev_dependency_group(self) -> bool:
+        pyproject = self._python_driver_git / "pyproject.toml"
+        if not pyproject.exists():
+            return False
+        in_dependency_groups = False
+        for line in pyproject.read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                in_dependency_groups = stripped == "[dependency-groups]"
+                continue
+            if in_dependency_groups and re.match(r"^dev\s*=", stripped):
+                return True
+        return False
+
     @lru_cache(maxsize=None)
     def _install_python_requirements(self):
         if os.environ.get("DEV_MODE", False) and self._venv_path.exists() and self._venv_path.is_dir():
@@ -182,9 +196,12 @@ class Run:
             self._create_venv()
             pip_prefix = "uv " if self._python_driver_type == "scylla" else ""
             if self._python_driver_type == "scylla":
+                # Older driver tags don't define a "dev" dependency group, so only
+                # request it when it actually exists to avoid "Group `dev` is not defined".
+                group_arg = "--group dev " if self._has_dev_dependency_group() else ""
                 self._run_command_in_shell(f"{self._activate_venv_cmd()} && "
                                            "CASS_DRIVER_BUILD_EXTENSIONS_ARE_MUST=yes "
-                                           "uv sync --active --group dev --inexact")
+                                           f"uv sync --active {group_arg}--inexact")
                 return True
             for requirement_file in ["requirements.txt", "test-requirements.txt"]:
                 if os.path.exists(requirement_file):
