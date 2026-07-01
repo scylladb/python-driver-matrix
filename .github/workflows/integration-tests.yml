@@ -66,9 +66,10 @@ jobs:
           # match only calendar-release Docker tags shaped like YYYY.MINOR.PATCH, for example
           # 2026.1.4. The selector after "and" then chooses from those matching tags:
           # LAST.LAST.LAST = newest patch in the newest minor of the newest calendar major,
-          # LAST.LAST.LAST-1 = previous patch in that same minor, LAST.1.LAST = newest LTS
-          # patch in the newest calendar major, and LAST-1.1.LAST = newest LTS patch in the
-          # previous calendar major.
+          # LAST-1 = the second-newest calendar release overall (robust global position filter
+          # that still resolves when the newest minor only has a single patch release),
+          # LAST.1.LAST = newest LTS patch in the newest calendar major, and LAST-1.1.LAST =
+          # newest LTS patch in the previous calendar major.
           case "$target" in
             LTS-LATEST)
               filters='^[0-9]{4}$.^[0-9]+$.^[0-9]+$ and LAST.1.LAST'
@@ -81,7 +82,7 @@ jobs:
               filters='^[0-9]{4}$.^[0-9]+$.^[0-9]+$ and LAST.LAST.LAST'
               ;;
             PRIOR)
-              filters='^[0-9]{4}$.^[0-9]+$.^[0-9]+$ and LAST.LAST.LAST-1'
+              filters='^[0-9]{4}$.^[0-9]+$.^[0-9]+$ and LAST-1'
               ;;
             *)
               needs_resolution=false

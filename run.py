@@ -169,6 +169,26 @@ class Run:
     def _activate_venv_cmd(self):
         return f"source {self._venv_path}/bin/activate"
 
+    def _has_dev_dependency_group(self) -> bool:
+        pyproject = self._python_driver_git / "pyproject.toml"
+        if not pyproject.exists():
+            return False
+        in_dependency_groups = False
+        for line in pyproject.read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                in_dependency_groups = stripped == "[dependency-groups]"
+                continue
+            if in_dependency_groups and re.match(r"^dev\s*=", stripped):
+                return True
+        return False
+
+    def _uses_uv_sync(self) -> bool:
+        # Newer Scylla driver tags declare their test/dev dependencies in a "dev"
+        # dependency group and are installed via "uv sync". Older tags keep them in
+        # requirements.txt/test-requirements.txt and must use the pip fallback.
+        return self._python_driver_type == "scylla" and self._has_dev_dependency_group()
+
     @lru_cache(maxsize=None)
     def _install_python_requirements(self):
         if os.environ.get("DEV_MODE", False) and self._venv_path.exists() and self._venv_path.is_dir():
@@ -181,7 +201,7 @@ class Run:
                     self._run_command_in_shell("curl -LsSf https://astral.sh/uv/install.sh | sh")
             self._create_venv()
             pip_prefix = "uv " if self._python_driver_type == "scylla" else ""
-            if self._python_driver_type == "scylla":
+            if self._uses_uv_sync():
                 self._run_command_in_shell(f"{self._activate_venv_cmd()} && "
                                            "CASS_DRIVER_BUILD_EXTENSIONS_ARE_MUST=yes "
                                            "uv sync --active --group dev --inexact")
@@ -230,8 +250,10 @@ class Run:
         os.chdir(self._python_driver_git)
         if self._checkout_branch() and self._apply_patch_files() and self._install_python_requirements():
             prefix = ""
-            if self._python_driver_type != "scylla":
-                self._run_command_in_shell(f"{self._activate_venv_cmd()} && {prefix}pip install -e .")
+            if not self._uses_uv_sync():
+                # "uv sync" already installs the project; otherwise install it editable.
+                install_prefix = "uv " if self._python_driver_type == "scylla" else ""
+                self._run_command_in_shell(f"{self._activate_venv_cmd()} && {install_prefix}pip install -e .")
             debug = '--log-cli-level=debug' if os.environ.get("DEV_MODE") else ''
             if self._python_driver_type == "scylla":
                 prefix = "uv run "
