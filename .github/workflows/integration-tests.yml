@@ -217,6 +217,9 @@ jobs:
           PROTOCOLS: ${{ inputs.protocols }}
           SCYLLA_VERSION: ${{ steps.resolve.outputs.scylla_version }}
           TESTS: ${{ inputs.tests }}
+          # Scylla 2025.1 does not advertise the experimental V2 extension;
+          # its test still starts another three-node cluster before skipping.
+          PYTEST_ADDOPTS: ${{ inputs.driver_type == 'scylla' && startsWith(steps.resolve.outputs.scylla_version, 'release:2025.1.') && '--ignore=tests/integration/standard/test_tablets_routing_v2.py' || '' }}
         run: |
           set -euo pipefail
           versions="${DRIVER_REF:-1}"
