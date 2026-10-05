@@ -1,7 +1,7 @@
 six>=1.6
 pytest==9.0.3
 PyYAML==6.0.1
-packaging==19.0
+packaging==25.0
 scales==1.0.9
 mock==4.0.3
 pytz==2019.1
