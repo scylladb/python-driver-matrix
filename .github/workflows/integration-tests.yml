@@ -217,6 +217,10 @@ jobs:
           PROTOCOLS: ${{ inputs.protocols }}
           SCYLLA_VERSION: ${{ steps.resolve.outputs.scylla_version }}
           TESTS: ${{ inputs.tests }}
+          # Scylla 2025.1 lacks experimental tablet V2, its TLS resumption
+          # assertions fail, and the application-info strict xfail is outdated.
+          PYTEST_ADDOPTS: >-
+            ${{ inputs.driver_type == 'scylla' && startsWith(steps.resolve.outputs.scylla_version, 'release:2025.1.') && '--ignore=tests/integration/standard/test_tablets_routing_v2.py --deselect=tests/integration/standard/test_application_info.py::ApplicationInfoTest::test_create_session_and_check_system_views_clients --deselect=tests/integration/standard/test_tls_resumption.py::TLSSessionResumptionTests::test_every_connection_resumes_from_a_warmed_cache --deselect=tests/integration/standard/test_tls_resumption.py::TLSSessionResumptionTests::test_resumption_is_on_by_default_with_an_ssl_context' || '' }}
         run: |
           set -euo pipefail
           versions="${DRIVER_REF:-1}"

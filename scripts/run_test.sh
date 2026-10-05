@@ -145,6 +145,7 @@ docker_cmd="docker run --init --detach=true \
     -e DEV_MODE \
     -e PIP_CACHE_DIR \
     -e UV_CACHE_DIR \
+    -e PYTEST_ADDOPTS \
     -e WORKSPACE \
     ${BUILD_OPTIONS} \
     ${JOB_OPTIONS} \
