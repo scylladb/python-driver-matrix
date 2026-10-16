@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import subprocess
 from functools import cached_property, lru_cache
@@ -16,7 +17,8 @@ from processjunit import ProcessJUnit
 
 class Run:
     def __init__(self, python_driver_git, python_driver_type, scylla_install_dir, tag, protocol, tests, scylla_version,
-                 collect_only):
+                 collect_only, invocation_dir=None):
+        self._invocation_dir = Path(invocation_dir) if invocation_dir is not None else Path.cwd()
         self.driver_version = tag.split("-", maxsplit=1)[0]
         self._full_driver_version = tag
         self._python_driver_git = Path(python_driver_git)
@@ -146,8 +148,14 @@ class Run:
 
     @lru_cache(maxsize=None)
     def _create_venv(self):
+        ccm_source = "https://github.com/scylladb/scylla-ccm/archive/master.zip"
+        if self.environment.get("CCM_DIR"):
+            ccm_dir = (self._invocation_dir / self.environment["CCM_DIR"]).resolve()
+            if not ccm_dir.is_dir():
+                raise FileNotFoundError(f"CCM_DIR does not point to a directory: {ccm_dir}")
+            ccm_source = str(ccm_dir)
         basic_packages = ("pytest==7.4.4",
-                          "https://github.com/scylladb/scylla-ccm/archive/master.zip",
+                          ccm_source,
                           "pytest-subtests")
         if self._venv_path.exists() and self._venv_path.is_dir():
             logging.info("Removing old python venv in directory '%s'", self._venv_path)
@@ -163,7 +171,8 @@ class Run:
             pip_prefix = ""
         self._run_command_in_shell(cmd=venv_cmd)
         logging.info("Installing the following packages:\n%s", "\n".join(basic_packages))
-        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && {pip_prefix}pip install {' '.join(basic_packages)}")
+        packages = shlex.join(basic_packages)
+        self._run_command_in_shell(cmd=f"{self._activate_venv_cmd()} && {pip_prefix}pip install {packages}")
 
     @lru_cache(maxsize=None)
     def _activate_venv_cmd(self):
@@ -214,7 +223,7 @@ class Run:
         except Exception as exc:
             logging.error("Failed to install python requirements for version %s, with: %s",
                           self.driver_version, str(exc))
-            return False
+            raise
 
     def _checkout_branch(self):
         try:
