@@ -83,6 +83,7 @@ def test_run_test_constructs_one_docker_command_with_workspace_env(tmp_path):
     run_call = f" {calls[0]} "
     assert " -e PIP_CACHE_DIR " in run_call
     assert " -e UV_CACHE_DIR " in run_call
+    assert " -e CCM_DIR " in run_call
     assert " -e PYTEST_ADDOPTS " in run_call
     assert " -e WORKSPACE " in run_call
     assert f" -v {home}/.pip-cache:{home}/.pip-cache " in run_call
