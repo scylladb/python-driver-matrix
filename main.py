@@ -15,6 +15,8 @@ logging.basicConfig(level=logging.INFO)
 def main(arguments: argparse.Namespace):
     status = 0
     results = dict()
+    # Run.run() changes cwd, but relative CCM_DIR paths belong to this invocation.
+    invocation_dir = os.getcwd()
 
     for driver_version in arguments.versions:
         for protocol in arguments.protocols:
@@ -26,7 +28,8 @@ def main(arguments: argparse.Namespace):
                              protocol=protocol,
                              tests=arguments.tests,
                              scylla_version=arguments.scylla_version,
-                             collect_only=arguments.collect_only)
+                             collect_only=arguments.collect_only,
+                             invocation_dir=invocation_dir)
             try:
                 result = runner.run()
                 logging.info("=== (%s:%s) PYTHON DRIVER MATRIX RESULTS FOR PROTOCOL v%s ===",

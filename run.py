@@ -17,7 +17,8 @@ from processjunit import ProcessJUnit
 
 class Run:
     def __init__(self, python_driver_git, python_driver_type, scylla_install_dir, tag, protocol, tests, scylla_version,
-                 collect_only):
+                 collect_only, invocation_dir=None):
+        self._invocation_dir = Path(invocation_dir) if invocation_dir is not None else Path.cwd()
         self.driver_version = tag.split("-", maxsplit=1)[0]
         self._full_driver_version = tag
         self._python_driver_git = Path(python_driver_git)
@@ -149,7 +150,7 @@ class Run:
     def _create_venv(self):
         ccm_source = "https://github.com/scylladb/scylla-ccm/archive/master.zip"
         if self.environment.get("CCM_DIR"):
-            ccm_dir = Path(self.environment["CCM_DIR"]).resolve()
+            ccm_dir = (self._invocation_dir / self.environment["CCM_DIR"]).resolve()
             if not ccm_dir.is_dir():
                 raise FileNotFoundError(f"CCM_DIR does not point to a directory: {ccm_dir}")
             ccm_source = str(ccm_dir)

@@ -1,6 +1,7 @@
 import argparse
 import json
 import shlex
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -35,7 +36,10 @@ def test_bootstrap_uses_configured_ccm_checkout(runner, tmp_path, monkeypatch, d
     assert ("uv" in install) == (driver_type == "scylla")
 
 
-def test_bootstrap_keeps_archive_fallback_without_ccm_dir(runner):
+@pytest.mark.parametrize("ccm_dir", [None, ""])
+def test_bootstrap_keeps_archive_fallback_without_ccm_dir(runner, monkeypatch, ccm_dir):
+    if ccm_dir is not None:
+        monkeypatch.setenv("CCM_DIR", ccm_dir)
     runner._run_command_in_shell = Mock()
 
     runner._create_venv()
@@ -81,3 +85,45 @@ def test_install_failure_is_reported_with_original_cause(runner, monkeypatch):
     assert "HTTP error 504" in metadata["failure_reason"]
     assert "FileNotFoundError" not in metadata["failure_reason"]
     assert not runner.xunit_file.exists()
+
+
+@pytest.mark.parametrize("driver_type", ["apache", "scylla"])
+def test_relative_ccm_checkout_survives_matrix_directory_changes(runner, tmp_path, monkeypatch, driver_type):
+    import main
+
+    invocation_dir = tmp_path / "invocation"
+    ccm_dir = invocation_dir / "CCM checkout; echo unwanted"
+    ccm_dir.mkdir(parents=True)
+    monkeypatch.chdir(invocation_dir)
+    monkeypatch.setenv("CCM_DIR", ccm_dir.name)
+    monkeypatch.setattr(Run, "xunit_dir", tmp_path / "reports")
+    monkeypatch.setattr(Run, "_checkout_branch", Mock(return_value=True))
+    monkeypatch.setattr(Run, "_apply_patch_files", Mock(return_value=True))
+    monkeypatch.setattr("run.shutil.which", Mock(return_value="uv"))
+    monkeypatch.setattr("run.ProcessJUnit", Mock(return_value=Mock(summary={"tests": 1}, is_failed=False)))
+    install_commands = Mock()
+    monkeypatch.setattr(Run, "_run_command_in_shell", install_commands)
+    execute_tests = Mock()
+    monkeypatch.setattr("run.subprocess.call", execute_tests)
+    arguments = argparse.Namespace(
+        versions=["3.29.3", "3.29.2"], protocols=[3, 4], python_driver_git=str(runner._python_driver_git),
+        driver_type=driver_type, scylla_install_dir="", tests="tests.integration.standard",
+        scylla_version="2026.1.15", collect_only=False, recipients=None,
+    )
+
+    with pytest.raises(SystemExit) as exit_info:
+        main.main(arguments)
+
+    assert exit_info.value.code == 0
+    assert Path.cwd() == runner._python_driver_git
+    assert execute_tests.call_count == 4
+    bootstrap_installs = [
+        shlex.split(call.kwargs["cmd"])
+        for call in install_commands.call_args_list
+        if "pytest==7.4.4" in call.kwargs.get("cmd", "")
+    ]
+    assert len(bootstrap_installs) == 4
+    for install in bootstrap_installs:
+        assert install[install.index("install") + 1:] == [
+            "pytest==7.4.4", str(ccm_dir), "pytest-subtests",
+        ]
