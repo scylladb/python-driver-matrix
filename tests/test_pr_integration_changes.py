@@ -1,5 +1,8 @@
+import os
+import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -38,3 +41,50 @@ def test_pr_detector_does_not_run_helper_from_pr_checkout():
 
     assert "from scripts.pr_integration_changes import detect_changes" not in workflow_path.read_text()
     assert not any("actions/checkout" in step.get("uses", "") for step in changes_steps)
+
+
+@pytest.mark.parametrize(
+    "available_cpus,expected_shards", [(1, 1), (2, 2), (4, 4), (8, 8), (16, 8)]
+)
+def test_integration_limits_exit_hang_shards_to_runner_cpus(
+    tmp_path, available_cpus, expected_shards
+):
+    workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/integration-tests.yml").read_text())
+    step = next(
+        step for step in workflow["jobs"]["integration-test"]["steps"]
+        if step.get("name") == "Run integration tests"
+    )
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    nproc = fake_bin / "nproc"
+    nproc.write_text(f"#!/bin/sh\nprintf '%s\\n' {available_cpus}\n")
+    nproc.chmod(0o755)
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    runner = scripts / "run_test.sh"
+    runner.write_text(
+        '#!/bin/sh\nprintf "%s\\n" "${EXIT_HANG_SMP-unset}" > "$SMP_RESULT"\n'
+    )
+    runner.chmod(0o755)
+    result_path = tmp_path / "shards"
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{fake_bin}:{env['PATH']}",
+            "SMP_RESULT": str(result_path),
+            "DRIVER_REF": "3.29.13-scylla",
+            "DRIVER_TYPE": "scylla",
+            "PYTHON_DRIVER_DIR": str(tmp_path / "driver"),
+            "PROTOCOLS": "3,4",
+            "SCYLLA_VERSION": "release:2025.1.16",
+            "TESTS": "",
+        }
+    )
+    env.pop("EXIT_HANG_SMP", None)
+
+    subprocess.run(
+        ["bash", "-c", step["run"]], cwd=tmp_path, env=env,
+        check=True, timeout=10
+    )
+
+    assert result_path.read_text().strip() == str(expected_shards)

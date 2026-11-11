@@ -147,6 +147,7 @@ docker_cmd="docker run --init --detach=true \
     -e UV_CACHE_DIR \
     -e CCM_DIR \
     -e PYTEST_ADDOPTS \
+    -e EXIT_HANG_SMP \
     -e WORKSPACE \
     ${BUILD_OPTIONS} \
     ${JOB_OPTIONS} \
