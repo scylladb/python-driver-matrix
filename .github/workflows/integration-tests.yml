@@ -224,6 +224,10 @@ jobs:
         run: |
           set -euo pipefail
           versions="${DRIVER_REF:-1}"
+          # Scylla 2025.1.16 cannot start more shards than the runner's CPUs,
+          # even in overprovisioned mode. Keep the driver's stress-test cap.
+          available_cpus=$(nproc)
+          export EXIT_HANG_SMP=$((available_cpus < 8 ? available_cpus : 8))
           args=(./scripts/run_test.sh python3 ./main.py "$PYTHON_DRIVER_DIR" --driver-type "$DRIVER_TYPE" --versions "$versions" --protocols "$PROTOCOLS" --scylla-version "$SCYLLA_VERSION")
           if [ -n "$TESTS" ]; then
             args+=(--tests "$TESTS")

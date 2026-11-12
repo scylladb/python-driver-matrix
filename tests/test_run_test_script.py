@@ -26,6 +26,11 @@ def test_run_test_constructs_one_docker_command_with_workspace_env(tmp_path):
             printf '\\n' >> "${FAKE_DOCKER_CALLS}"
             case "$command" in
               run)
+                for arg in "$@"; do
+                  if [[ "$arg" == "EXIT_HANG_SMP" ]]; then
+                    printf '%s\\n' "${EXIT_HANG_SMP}" > "${FAKE_DOCKER_SMP}"
+                  fi
+                done
                 printf 'fake-container\\n'
                 ;;
               logs)
@@ -63,6 +68,8 @@ def test_run_test_constructs_one_docker_command_with_workspace_env(tmp_path):
             "SCYLLA_VERSION": "2026.1.3",
             "PYTEST_ADDOPTS": "--ignore=tests/integration/standard/test_tablets_routing_v2.py",
             "FAKE_DOCKER_CALLS": str(calls_file),
+            "EXIT_HANG_SMP": "4",
+            "FAKE_DOCKER_SMP": str(tmp_path / "docker.smp"),
         }
     )
     env.pop("WORKSPACE", None)
@@ -86,6 +93,8 @@ def test_run_test_constructs_one_docker_command_with_workspace_env(tmp_path):
     assert " -e CCM_DIR " in run_call
     assert " -e PYTEST_ADDOPTS " in run_call
     assert " -e WORKSPACE " in run_call
+    assert " -e EXIT_HANG_SMP " in run_call
+    assert (tmp_path / "docker.smp").read_text().strip() == "4"
     assert f" -v {home}/.pip-cache:{home}/.pip-cache " in run_call
     assert f" -v {home}/.uv-cache:{home}/.uv-cache " in run_call
     assert calls[1:] == ["logs fake-container -f", "wait fake-container", "rm -f fake-container"]
